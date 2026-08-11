@@ -76,6 +76,20 @@ router.post('/masterliste', upload.single('datei'), async (req, res) => {
       if (zeile['Absagegrund']) kontakt.absagegrund = String(zeile['Absagegrund']).trim();
       if (zeile['Wiedervorlage'] instanceof Date) kontakt.wiedervorlage = zeile['Wiedervorlage'];
 
+      // Alte "Verantwortliche Person" wird als Owner uebernommen. Taucht ein Kuerzel auf,
+      // das noch kein Bearbeiter ist, legen wir es automatisch (inaktiv) an, statt den Import
+      // an einer fehlenden Zuordnung scheitern zu lassen - aktivieren kann man es spaeter
+      // unter Einstellungen mit einem Klick.
+      const verantwortlich = zeile['Verantwortliche Person'] ? String(zeile['Verantwortliche Person']).trim() : null;
+      if (verantwortlich) {
+        await client.query(
+          `INSERT INTO bearbeiter (kuerzel, name, aktiv) VALUES ($1, $1, false)
+           ON CONFLICT (kuerzel) DO NOTHING`,
+          [verantwortlich]
+        );
+        kontakt.owner_kuerzel = verantwortlich;
+      }
+
       const spalten = Object.keys(kontakt);
       const werte = spalten.map((s) => kontakt[s]);
       const platzhalter = spalten.map((_, i) => `$${i + 1}`);
