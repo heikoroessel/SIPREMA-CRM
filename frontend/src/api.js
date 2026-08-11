@@ -23,5 +23,11 @@ export const api = {
   bearbeiterAendern: (kuerzel, body) => req(`/bearbeiter/${kuerzel}`, { method: 'PUT', body: JSON.stringify(body) }),
   punkteGewichtung: () => req('/settings/punkte'),
   punkteGewichtungAendern: (ereignis, punkte) => req(`/settings/punkte/${ereignis}`, { method: 'PUT', body: JSON.stringify({ punkte }) }),
+  statusOptionen: () => req('/settings/status'),
+  statusOptionAnlegen: (wert, label) => req('/settings/status', { method: 'POST', body: JSON.stringify({ wert, label }) }),
+  statusOptionLoeschen: (wert) => req(`/settings/status/${wert}`, { method: 'DELETE' }),
+  firmaEinstellungen: () => req('/settings/firma'),
+  firmaEinstellungAendern: (key, value) => req(`/settings/firma/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
+  werte: (feld) => req(`/kontakte/werte/${feld}`),
   meinePunkte: (kuerzel, zeitraum) => req(`/punkte/${kuerzel}?zeitraum=${zeitraum}`)
 };

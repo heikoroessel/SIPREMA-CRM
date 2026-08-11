@@ -3,6 +3,35 @@ import multer from 'multer';
 import XLSX from 'xlsx';
 import { pool } from '../db.js';
 
+// Versucht, eine Notiz-Zelle anhand von Zeilen, die mit einem Datum beginnen (z.B. "2.3." oder
+// "23.03.2026"), in einzelne datierte Aktivitaeten zu zerlegen. Gibt null zurueck, wenn weniger
+// als zwei datierte Zeilen gefunden wurden - dann wird der Text als EIN Block uebernommen, um
+// nichts falsch zu zerstueckeln.
+function zerlegeNotizHistorie(text) {
+  const zeilenMusterDatum = /^(\d{1,2})\.(\d{1,2})\.(\d{4})?\.?\s*[:\-]?\s*/;
+  const zeilen = text.split(/\r?\n/);
+  const eintraege = [];
+  let aktuell = null;
+
+  for (const zeile of zeilen) {
+    const match = zeile.match(zeilenMusterDatum);
+    if (match) {
+      if (aktuell) eintraege.push(aktuell);
+      const [, tag, monat, jahr] = match;
+      const jahrZahl = jahr ? Number(jahr) : new Date().getFullYear();
+      const datum = new Date(jahrZahl, Number(monat) - 1, Number(tag));
+      aktuell = { datum: isNaN(datum.getTime()) ? null : datum, text: zeile.slice(match[0].length).trim() };
+    } else if (zeile.trim()) {
+      if (!aktuell) aktuell = { datum: null, text: zeile.trim() };
+      else aktuell.text += (aktuell.text ? '\n' : '') + zeile.trim();
+    }
+  }
+  if (aktuell) eintraege.push(aktuell);
+
+  const datierte = eintraege.filter((e) => e.datum);
+  return datierte.length >= 2 ? eintraege : null;
+}
+
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
@@ -98,13 +127,26 @@ router.post('/masterliste', upload.single('datei'), async (req, res) => {
         werte
       );
 
-      // Alte Freitext-Notiz wird als ein einzelner Historien-Eintrag uebernommen,
-      // statt Daten zu verlieren - ab jetzt kommen neue Eintraege strukturiert dazu.
+      // Alte Freitext-Notiz wird uebernommen - wenn sich datierte Einzel-Ereignisse erkennen
+      // lassen, als mehrere Aktivitaeten mit passendem Datum, sonst als ein Block.
       if (zeile['Notiz']) {
-        await client.query(
-          `INSERT INTO aktivitaeten (kontakt_id, autor_kuerzel, text) VALUES ($1, NULL, $2)`,
-          [neu[0].id, `[Übernommen aus Masterliste]\n${String(zeile['Notiz']).trim()}`]
-        );
+        const notizText = String(zeile['Notiz']).trim();
+        const zerlegt = zerlegeNotizHistorie(notizText);
+        if (zerlegt) {
+          for (const eintrag of zerlegt) {
+            if (!eintrag.text) continue;
+            await client.query(
+              `INSERT INTO aktivitaeten (kontakt_id, autor_kuerzel, text, erstellt_am)
+               VALUES ($1, NULL, $2, $3)`,
+              [neu[0].id, `[Übernommen aus Masterliste] ${eintrag.text}`, eintrag.datum || new Date()]
+            );
+          }
+        } else {
+          await client.query(
+            `INSERT INTO aktivitaeten (kontakt_id, autor_kuerzel, text) VALUES ($1, NULL, $2)`,
+            [neu[0].id, `[Übernommen aus Masterliste]\n${notizText}`]
+          );
+        }
       }
       importiert++;
     }

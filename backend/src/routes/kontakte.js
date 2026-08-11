@@ -10,7 +10,7 @@ const PHASEN = ['unbearbeitet', 'in_kontakt', 'termin', 'angebot', 'auftrag'];
 // Query-Parameter: phase, ergebnis, owner ("none" fuer nicht zugewiesen), plz (Prefix),
 // zielgruppe, quelle, q (Volltext auf Firma/Nachname), page, pageSize
 router.get('/', async (req, res) => {
-  const { phase, ergebnis, owner, plz, zielgruppe, quelle, q } = req.query;
+  const { phase, ergebnis, owner, plz, zielgruppe, quelle, anrede, vorname, nachname, ort, q } = req.query;
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(200, Number(req.query.pageSize) || 50);
 
@@ -22,8 +22,12 @@ router.get('/', async (req, res) => {
   if (owner === 'none') { where.push('owner_kuerzel IS NULL'); }
   else if (owner) { params.push(owner); where.push(`owner_kuerzel = $${params.length}`); }
   if (plz) { params.push(`${plz}%`); where.push(`plz LIKE $${params.length}`); }
+  if (ort) { params.push(`%${ort}%`); where.push(`ort ILIKE $${params.length}`); }
   if (zielgruppe) { params.push(zielgruppe); where.push(`zielgruppe = $${params.length}`); }
   if (quelle) { params.push(quelle); where.push(`quelle = $${params.length}`); }
+  if (anrede) { params.push(anrede); where.push(`anrede = $${params.length}`); }
+  if (vorname) { params.push(`%${vorname}%`); where.push(`vorname ILIKE $${params.length}`); }
+  if (nachname) { params.push(`%${nachname}%`); where.push(`nachname ILIKE $${params.length}`); }
   if (q) { params.push(`%${q}%`); where.push(`(firma ILIKE $${params.length} OR nachname ILIKE $${params.length})`); }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -31,7 +35,8 @@ router.get('/', async (req, res) => {
   const { rows: countRows } = await pool.query(`SELECT count(*) FROM kontakte ${whereSql}`, params);
   params.push(pageSize, (page - 1) * pageSize);
   const { rows } = await pool.query(
-    `SELECT id, zielgruppe, firma, ort, plz, phase, ergebnis, owner_kuerzel, wiedervorlage,
+    `SELECT id, zielgruppe, firma, ort, plz, anrede, vorname, nachname, quelle,
+            phase, ergebnis, owner_kuerzel, wiedervorlage,
             EXTRACT(day FROM now() - phase_seit)::int AS tage_in_phase
      FROM kontakte ${whereSql}
      ORDER BY erstellt_am DESC
@@ -40,6 +45,17 @@ router.get('/', async (req, res) => {
   );
 
   res.json({ total: Number(countRows[0].count), page, pageSize, items: rows });
+});
+
+// GET /api/kontakte/werte/:feld -> bekannte, tatsaechlich vorkommende Werte einer Spalte
+// (fuer Dropdown-Filter in der Kontaktliste bei Zielgruppe/Quelle/Anrede - keine geratenen Listen)
+const FILTERBARE_FELDER = ['zielgruppe', 'quelle', 'anrede'];
+router.get('/werte/:feld', async (req, res) => {
+  if (!FILTERBARE_FELDER.includes(req.params.feld)) return res.status(400).json({ error: 'Feld nicht filterbar' });
+  const { rows } = await pool.query(
+    `SELECT DISTINCT ${req.params.feld} AS wert FROM kontakte WHERE ${req.params.feld} IS NOT NULL AND ${req.params.feld} != '' ORDER BY 1`
+  );
+  res.json(rows.map((r) => r.wert));
 });
 
 // GET /api/kontakte/zaehler -> Anzahl pro Phase, fuer die Filter-Chips mit Live-Zaehler

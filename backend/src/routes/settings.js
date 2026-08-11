@@ -38,4 +38,27 @@ router.put('/firma/:key', async (req, res) => {
   res.json(rows[0]);
 });
 
+// Status-Optionen (fruehere "Ergebnis"-Werte offen/verloren/ruht) - frei erweiterbar,
+// damit das Team eigene Zwischenstati definieren kann, ohne dass Claude nochmal ran muss.
+router.get('/status', async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM status_optionen ORDER BY reihenfolge, label');
+  res.json(rows);
+});
+
+router.post('/status', async (req, res) => {
+  const { wert, label } = req.body;
+  if (!wert || !label) return res.status(400).json({ error: 'wert und label erforderlich' });
+  const { rows: max } = await pool.query('SELECT coalesce(max(reihenfolge), 0) AS m FROM status_optionen');
+  const { rows } = await pool.query(
+    `INSERT INTO status_optionen (wert, label, reihenfolge) VALUES ($1, $2, $3) RETURNING *`,
+    [wert.toLowerCase().trim(), label, Number(max[0].m) + 1]
+  );
+  res.status(201).json(rows[0]);
+});
+
+router.delete('/status/:wert', async (req, res) => {
+  await pool.query('DELETE FROM status_optionen WHERE wert = $1', [req.params.wert]);
+  res.status(204).end();
+});
+
 export default router;

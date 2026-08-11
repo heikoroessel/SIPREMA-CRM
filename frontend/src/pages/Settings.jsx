@@ -11,12 +11,36 @@ export default function Settings() {
   const [vonOwner, setVonOwner] = useState('');
   const [zuOwner, setZuOwner] = useState('');
   const [uebernahmeStatus, setUebernahmeStatus] = useState('');
+  const [statusOptionen, setStatusOptionen] = useState([]);
+  const [neuerStatusWert, setNeuerStatusWert] = useState('');
+  const [neuerStatusLabel, setNeuerStatusLabel] = useState('');
+  const [firmaEinstellungen, setFirmaEinstellungen] = useState({});
 
   function laden() {
     api.bearbeiter().then(setBearbeiter);
     api.punkteGewichtung().then(setGewichtung);
+    api.statusOptionen().then(setStatusOptionen);
+    api.firmaEinstellungen().then(setFirmaEinstellungen);
   }
   useEffect(laden, []);
+
+  async function firmaEinstellungAendern(key, value) {
+    await api.firmaEinstellungAendern(key, value);
+    laden();
+  }
+
+  async function statusOptionAnlegen() {
+    if (!neuerStatusWert || !neuerStatusLabel) return;
+    await api.statusOptionAnlegen(neuerStatusWert, neuerStatusLabel);
+    setNeuerStatusWert(''); setNeuerStatusLabel('');
+    laden();
+  }
+
+  async function statusOptionLoeschen(wert) {
+    if (!confirm(`Status "${wert}" wirklich löschen? Kontakte, die diesen Status haben, behalten ihn als Wert, er erscheint dann aber nicht mehr in der Auswahl.`)) return;
+    await api.statusOptionLoeschen(wert);
+    laden();
+  }
 
   async function bearbeiterAnlegen() {
     if (!neuKuerzel || !neuName) return;
@@ -103,6 +127,47 @@ export default function Settings() {
           <button className="primary" onClick={kontakteUebertragen} disabled={!vonOwner || !zuOwner}>Übertragen</button>
         </div>
         {uebernahmeStatus && <p style={{ fontSize: 13 }}>{uebernahmeStatus}</p>}
+      </div>
+
+      <div className="card">
+        <p style={{ fontWeight: 600, marginTop: 0 }}>Kapazität & Punkte-Ziel</p>
+        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
+          Bestimmt, wie die Soll-Punkte je Bearbeiter berechnet werden: (eigene Std./Woche ÷ Vollzeit-Std.) × Sollpunkte pro Vollzeit-Woche.
+        </p>
+        <div className="field-grid" style={{ gridTemplateColumns: '1fr 1fr', maxWidth: 500 }}>
+          <div>
+            <label>Vollzeit-Stunden pro Woche</label>
+            <input type="text" defaultValue={firmaEinstellungen.vollzeit_stunden_woche} onBlur={(e) => firmaEinstellungAendern('vollzeit_stunden_woche', e.target.value)} />
+          </div>
+          <div>
+            <label>Sollpunkte pro Vollzeit-Woche</label>
+            <input type="text" defaultValue={firmaEinstellungen.sollpunkte_pro_vollzeit_woche} onBlur={(e) => firmaEinstellungAendern('sollpunkte_pro_vollzeit_woche', e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <p style={{ fontWeight: 600, marginTop: 0 }}>Status-Optionen</p>
+        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
+          Diese Werte stehen im Kontakt-Detail bei "Status" zur Auswahl (z.B. Offen, Verloren, Ruht) — frei erweiterbar.
+        </p>
+        <table>
+          <thead><tr><th>Wert</th><th>Label</th><th></th></tr></thead>
+          <tbody>
+            {statusOptionen.map((s) => (
+              <tr key={s.wert}>
+                <td>{s.wert}</td>
+                <td>{s.label}</td>
+                <td><button className="secondary" onClick={() => statusOptionLoeschen(s.wert)}>Löschen</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <input type="text" placeholder="Wert (z.B. wartend)" style={{ width: 160 }} value={neuerStatusWert} onChange={(e) => setNeuerStatusWert(e.target.value)} />
+          <input type="text" placeholder="Label (z.B. Wartend)" value={neuerStatusLabel} onChange={(e) => setNeuerStatusLabel(e.target.value)} />
+          <button className="primary" onClick={statusOptionAnlegen}>Hinzufügen</button>
+        </div>
       </div>
 
       <div className="card">

@@ -6,14 +6,29 @@ const PHASEN = ['unbearbeitet', 'in_kontakt', 'termin', 'angebot', 'auftrag'];
 const PHASEN_LABEL = { unbearbeitet: 'Unbearbeitet', in_kontakt: 'In Kontakt', termin: 'Termin', angebot: 'Angebot', auftrag: 'Auftrag' };
 const ABSAGEGRUENDE = ['kein Interesse', 'keine Rückmeldung', 'Falsche Zielgruppe', 'Multiplikator', 'Berufswechsel'];
 
+// Editierbares Textfeld: zeigt den Wert an, wird bei Klick zum Eingabefeld (onBlur speichert).
+function Feld({ label, feld, wert, aendern, typ = 'text' }) {
+  return (
+    <div>
+      <label>{label}</label>
+      <input type={typ} defaultValue={wert || ''} style={{ width: '100%' }} onBlur={(e) => { if (e.target.value !== (wert || '')) aendern(feld, e.target.value || null); }} />
+    </div>
+  );
+}
+
 export default function ContactDetail() {
   const { id } = useParams();
   const [k, setK] = useState(null);
   const [bearbeiter, setBearbeiter] = useState([]);
+  const [statusOptionen, setStatusOptionen] = useState([]);
   const [neuerText, setNeuerText] = useState('');
 
   function laden() { api.kontakt(id).then(setK); }
-  useEffect(() => { laden(); api.bearbeiter(true).then(setBearbeiter); }, [id]);
+  useEffect(() => {
+    laden();
+    api.bearbeiter(true).then(setBearbeiter);
+    api.statusOptionen().then(setStatusOptionen);
+  }, [id]);
 
   if (!k) return <p>Lädt …</p>;
 
@@ -55,11 +70,9 @@ export default function ContactDetail() {
 
         <div className="field-grid">
           <div>
-            <label>Ergebnis</label>
+            <label>Status</label>
             <select value={k.ergebnis} onChange={(e) => feldAendern('ergebnis', e.target.value)}>
-              <option value="offen">Offen</option>
-              <option value="verloren">Verloren</option>
-              <option value="ruht">Ruht</option>
+              {statusOptionen.map((s) => <option key={s.wert} value={s.wert}>{s.label}</option>)}
             </select>
           </div>
           {k.ergebnis === 'verloren' && (
@@ -86,17 +99,53 @@ export default function ContactDetail() {
             <label>Pilotprojekt</label>
             <input type="checkbox" checked={k.pilotprojekt} onChange={(e) => feldAendern('pilotprojekt', e.target.checked)} />
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
           <div>
-            <label>Ansprechpartner</label>
-            <span>{[k.anrede, k.titel, k.vorname, k.nachname].filter(Boolean).join(' ')} {k.rolle ? `– ${k.rolle}` : ''}</span>
+            <p style={{ fontWeight: 600, marginTop: 0 }}>Firma</p>
+            <div className="field-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <Feld label="Firma" feld="firma" wert={k.firma} aendern={feldAendern} />
+              <Feld label="Zielgruppe" feld="zielgruppe" wert={k.zielgruppe} aendern={feldAendern} />
+              <Feld label="Straße & Hausnummer" feld="strasse" wert={k.strasse} aendern={feldAendern} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Feld label="PLZ" feld="plz" wert={k.plz} aendern={feldAendern} />
+                <Feld label="Ort" feld="ort" wert={k.ort} aendern={feldAendern} />
+              </div>
+              <Feld label="Land" feld="land" wert={k.land} aendern={feldAendern} />
+              <Feld label="Internetseite" feld="website" wert={k.website} aendern={feldAendern} />
+              <Feld label="Telefon Zentrale" feld="telefon_zentrale" wert={k.telefon_zentrale} aendern={feldAendern} />
+              <Feld label="E-Mail Firma" feld="email_firma" wert={k.email_firma} aendern={feldAendern} />
+              <Feld label="Quelle" feld="quelle" wert={k.quelle} aendern={feldAendern} />
+              <Feld label="Persönliche Vertriebsstrategie" feld="vertriebsstrategie" wert={k.vertriebsstrategie} aendern={feldAendern} />
+            </div>
           </div>
+
           <div>
-            <label>Kontakt</label>
-            <span>{k.email || '–'} · {k.telefon || '–'}</span>
-          </div>
-          <div>
-            <label>Adresse</label>
-            <span>{k.strasse}, {k.plz} {k.ort}</span>
+            <p style={{ fontWeight: 600, marginTop: 0 }}>Ansprechpartner</p>
+            <div className="field-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div>
+                  <label>Anrede</label>
+                  <select value={k.anrede || ''} onChange={(e) => feldAendern('anrede', e.target.value || null)}>
+                    <option value="">–</option>
+                    <option value="Herr">Herr</option>
+                    <option value="Frau">Frau</option>
+                    <option value="Divers">Divers</option>
+                  </select>
+                </div>
+                <Feld label="Titel" feld="titel" wert={k.titel} aendern={feldAendern} />
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Feld label="Vorname" feld="vorname" wert={k.vorname} aendern={feldAendern} />
+                <Feld label="Nachname" feld="nachname" wert={k.nachname} aendern={feldAendern} />
+              </div>
+              <Feld label="Rolle" feld="rolle" wert={k.rolle} aendern={feldAendern} />
+              <Feld label="E-Mail" feld="email" wert={k.email} aendern={feldAendern} />
+              <Feld label="Telefon" feld="telefon" wert={k.telefon} aendern={feldAendern} />
+            </div>
           </div>
         </div>
       </div>

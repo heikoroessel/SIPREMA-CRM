@@ -1,51 +1,69 @@
 # SIPREMA CRM (MVP)
 
 Ersetzt die SIPREMA Kontakte-Masterliste (Excel). Node.js/Express-Backend,
-React/Vite-Frontend, PostgreSQL – gleicher Stack wie eure anderen Railway-Apps
-(Leistungsmatrix, Wandersteine).
+React/Vite-Frontend, PostgreSQL – gleicher Stack wie eure anderen Railway-Apps.
 
-## Was ist drin (MVP-Umfang, wie besprochen)
+## Update auf diesen Stand
 
-- Kontaktliste als filterbare Tabelle: Phase-Chips mit Live-Zähler, Filter
-  "Nicht zugewiesen", PLZ-Filter, Spalte "Tage in aktueller Phase"
-- Owner-Zuweisung direkt in der Tabelle (Dropdown) + Sammel-Zuweisung für
-  mehrere ausgewählte oder gefilterte Kontakte
-- Kontakt-Detailseite: Stage-Stepper (Unbearbeitet → In Kontakt → Termin →
-  Angebot → Auftrag), Ergebnis (Offen/Verloren/Ruht) mit Absagegrund,
-  Pilotprojekt-Häkchen, Wiedervorlage, strukturierte Aktivitäten-Timeline
-- Bearbeiter-Verwaltung (Kürzel, Name, Arbeitszeit/Woche, aktiv/inaktiv –
-  Deaktivieren statt Löschen, damit die Historie erhalten bleibt)
-- Punkte-Gewichtung editierbar unter Einstellungen (Startwerte sind grobe
-  Platzhalter – bitte anhand eurer echten Konversionsraten aus der
-  Masterliste nachjustieren, siehe Chat-Verlauf)
-- Tägliche Punkteanzeige in der Kopfleiste (Ist/Soll, arbeitszeitnormiert)
-- Import der aktuellen Masterliste (.xlsx) unter Einstellungen → feste
-  Spaltenzuordnung für das bekannte Format; alte Notizen werden als ein
-  Historien-Eintrag pro Kontakt übernommen
+**Wichtig: Ihr müsst NICHT das ganze GitHub-Repo löschen.** Alle Änderungen
+sind rein additiv (keine Datei wurde entfernt, keine Datenbank-Spalte
+umbenannt) – am einfachsten zieht ihr einfach den kompletten entpackten
+Ordner per Drag & Drop nochmal auf die GitHub-Upload-Seite (wie beim ersten
+Mal). Dateien mit gleichem Pfad werden automatisch überschrieben, neue
+Dateien (z.B. package-lock.json) kommen dazu. Railway baut danach automatisch
+neu – Build-Befehl, Start-Befehl, DATABASE_URL und die Domain bleiben
+unverändert, die hängen am Service, nicht am Datei-Inhalt.
+
+Die Datenbank-Struktur wird beim Start automatisch erweitert
+(`CREATE TABLE IF NOT EXISTS`) – eure bereits importierten Kontakte bleiben
+erhalten, es ist **kein Reset nötig**, außer ihr wollt ohnehin sauber neu
+importieren.
+
+## Was ist neu gegenüber der ersten Version
+
+- **Status statt Ergebnis:** umbenannt, und die Werte (Offen/Verloren/Ruht)
+  sind jetzt unter Einstellungen frei erweiterbar
+- **Kontakt-Detailseite:** alle Masterlisten-Felder editierbar, sauber in
+  zwei Spalten (Firma links, Ansprechpartner rechts). Anrede als festes
+  Dropdown (Herr/Frau/Divers)
+- **Notiz-Historie beim Import:** wird versucht, anhand von Datums-Zeilen
+  (z.B. "2.3. Anruf") in einzelne, datierte Aktivitäten zu zerlegen. Gelingt
+  das nicht eindeutig, bleibt der komplette Text als ein Block erhalten,
+  markiert mit "[Übernommen aus Masterliste]" – es geht nie Text verloren
+- **Kontaktliste:** deutlich mehr Spalten (Zielgruppe, Firma, PLZ, Ort,
+  Anrede, Vorname, Nachname, Quelle, Wiedervorlage, Owner), jede Spalte hat
+  eine eigene Excel-artige Filterzeile direkt unter der Überschrift
+  (Freitext bei Firma/Ort/PLZ/Namen, Dropdown bei Zielgruppe/Quelle/Anrede/
+  Owner). Alle Filter kombinierbar, Spalten weiterhin klickbar sortierbar
+- **Kopfbereich:** kein Textlink-Menü mehr, stattdessen Zahnrad-Symbol oben
+  rechts für die Einstellungen; die Punkteanzeige ("Heute: X / Y Soll")
+  sitzt jetzt prominent mittig
+- **Reset-Funktion** unter Einstellungen (alle Kontakte löschen, für einen
+  sauberen Neu-Import ohne Duplikate)
+- **Kapazität & Punkte-Ziel editierbar:** Vollzeit-Stunden/Woche und
+  Sollpunkte pro Vollzeit-Woche jetzt unter Einstellungen anpassbar (vorher
+  nur in der Datenbank versteckt, keine Oberfläche dafür)
+- **Bearbeiter-Sammelübertragung** unter Einstellungen (alle Kontakte einer
+  Person auf eine andere übertragen)
 
 ## Bewusst nicht enthalten (Phase 2, wie besprochen)
 
-- Fuzzy-Duplikaterkennung
+- Fuzzy-Duplikaterkennung (deshalb: Reset-Knopf für saubere Re-Importe)
 - Genereller Import mit automatischem Spalten-Mapping für beliebige Quellen
 - E-Mail-Erinnerungen, Datenexport
 - Test-Free/Pilotprojekt als eigener Phasen-Workflow (aktuell nur ein
   einfaches Häkchen + Datum)
-- Feinschliff Dashboard (Kontakte/Termine/Beauftragungen/Umsatz je Monat)
+- Punkte-Korrektur/Reset pro Person (bewusst weggelassen: die Tagesanzeige
+  berechnet sich live und ist am nächsten Tag ohnehin wieder bei 0)
 
-## Offene Punkte, die noch eine Entscheidung brauchen
+## Bekannte Einschränkungen der Notiz-Zerlegung
 
-- **Historische Owner-Zuweisung beim Import:** Der Import setzt bewusst
-  *keinen* Owner (alle importierten Kontakte landen als "nicht zugewiesen"
-  im Pickup-Pool). Falls ihr stattdessen die alte "Verantwortliche Person"
-  aus der Masterliste 1:1 übernehmen wollt (auch für NEL), sag Bescheid –
-  ist eine kleine Anpassung im Import-Mapping.
-- **Farben/Branding:** aktuell nur grob an siprema.de angenähert (Teal/Grau).
-  Echte Hex-Codes oder Logo nachreichen, dann passe ich `frontend/src/styles.css`
-  an.
-- **Punkte-Gewichtung:** Startwerte (Aktivität 1, In Kontakt 2, Termin 10,
-  Angebot 15, Auftrag 40) sind ein grober erster Wurf, keine exakte
-  Kalibrierung aus euren echten Konversionsraten – wie besprochen über
-  Einstellungen frei anpassbar.
+Bei Datumsangaben ohne Jahr (z.B. "2.3.") wird das **aktuelle Kalenderjahr**
+angenommen – das kann bei älteren Einträgen falsch liegen. Die Zerlegung
+greift nur, wenn mindestens zwei Zeilen mit einem Datum am Zeilenanfang
+beginnen; ist das Datum mitten im Satz eingebettet, bleibt der Text
+sicherheitshalber als ein Block erhalten (kein Datenverlust, nur weniger
+fein aufgeteilt).
 
 ## Lokal starten
 
@@ -64,27 +82,29 @@ npm run dev              # läuft auf Port 5173, proxied /api auf Port 3000
 
 ## Deployment auf Railway
 
-1. Repo auf GitHub anlegen (z. B. `heikoroessel/siprema-crm`, wie beim
-   Wandersteine-Projekt: `frontend/` + `backend/` in einem Repo).
-2. In Railway ein neues Projekt anlegen, GitHub-Repo verbinden, PostgreSQL-
-   Plugin hinzufügen (setzt `DATABASE_URL` automatisch als Umgebungsvariable).
-3. Build-Befehl: `cd frontend && npm install && npm run build && cd ../backend && npm install`
-   Start-Befehl: `cd backend && npm start`
-   (Der Backend-Server liefert `frontend/dist` direkt mit aus – ein Railway-
-   Service reicht, wie bei Leistungsmatrix/Wandersteine.)
-4. Beim ersten Start legt der Server automatisch alle Tabellen an
-   (`initSchema()` in `backend/src/db.js`) und setzt die Bearbeiter HEC/UBC
-   (aktiv) und NEL (inaktiv, da ausgeschieden) sowie Start-Punktwerte an.
-5. Danach unter "Einstellungen" die aktuelle Masterliste (.xlsx) importieren.
+Bereits eingerichtet (Service SIPREMA-CRM + Postgres) – bei diesem Update
+ist nichts weiter zu tun, außer den neuen Datei-Inhalt auf GitHub zu
+übernehmen (siehe oben). Für eine komplette Neueinrichtung von Grund auf:
+
+1. Repo auf GitHub anlegen, Inhalt dieses Ordners hochladen.
+2. In Railway: "New Project" → "Deploy from GitHub repo" → Repo auswählen.
+3. "+ New" → "Database" → "PostgreSQL" im selben Projekt hinzufügen.
+4. Im App-Service unter "Settings" → "Build": Build Command
+   `cd frontend && npm install && npm run build && cd ../backend && npm install`
+   Unter "Deploy": Start Command `cd backend && npm start`
+5. Unter "Variables": "Add Reference Variable" → `DATABASE_URL` vom
+   Postgres-Service verknüpfen.
+6. Unter "Settings" → "Networking" → "Generate Domain" (Port 8080 passt).
+7. In der App unter "Einstellungen" die Masterliste (.xlsx) importieren.
 
 ## Datenmodell (Kurzüberblick)
 
-- `kontakte` – alle Masterlisten-Felder + `phase`, `ergebnis`, `owner_kuerzel`,
-  `phase_seit` (Zeitstempel des letzten Phasenwechsels, Basis für "Tage in
-  Phase" und später die automatische KPI-Berechnung)
-- `aktivitaeten` – Notiz-Timeline (Datum, Autor-Kürzel, Text) statt einem
-  Freitextfeld
+- `kontakte` – alle Masterlisten-Felder + `phase`, `ergebnis` (UI-Label:
+  "Status"), `owner_kuerzel`, `phase_seit` (Zeitstempel des letzten
+  Phasenwechsels, Basis für "Tage in Phase")
+- `aktivitaeten` – Notiz-Timeline (Datum, Autor-Kürzel, Text)
 - `phase_historie` – ein Eintrag pro Phasen-/Ergebniswechsel mit Zeitstempel
   und Kürzel der Person, die geändert hat – Grundlage für Punkte und das
   spätere Dashboard
+- `status_optionen` – frei erweiterbare Werte für das Status-Feld
 - `bearbeiter`, `punkte_gewichtung`, `firmen_einstellungen` – Einstellungen

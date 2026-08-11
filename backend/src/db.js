@@ -24,6 +24,12 @@ export async function initSchema() {
       punkte integer NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS status_optionen (
+      wert text PRIMARY KEY,
+      label text NOT NULL,
+      reihenfolge integer NOT NULL DEFAULT 0
+    );
+
     CREATE TABLE IF NOT EXISTS firmen_einstellungen (
       key text PRIMARY KEY,
       value text NOT NULL
@@ -112,6 +118,16 @@ export async function initSchema() {
       INSERT INTO firmen_einstellungen (key, value) VALUES
       ('vollzeit_stunden_woche', '40'),
       ('sollpunkte_pro_vollzeit_woche', '250')
+    `);
+  }
+
+  const { rows: statusCount } = await pool.query('SELECT count(*) FROM status_optionen');
+  if (Number(statusCount[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO status_optionen (wert, label, reihenfolge) VALUES
+      ('offen', 'Offen', 1),
+      ('verloren', 'Verloren', 2),
+      ('ruht', 'Ruht', 3)
     `);
   }
 }
