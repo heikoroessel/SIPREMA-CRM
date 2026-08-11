@@ -8,6 +8,9 @@ export default function Settings() {
   const [neuName, setNeuName] = useState('');
   const [neuStunden, setNeuStunden] = useState(40);
   const [importStatus, setImportStatus] = useState('');
+  const [vonOwner, setVonOwner] = useState('');
+  const [zuOwner, setZuOwner] = useState('');
+  const [uebernahmeStatus, setUebernahmeStatus] = useState('');
 
   function laden() {
     api.bearbeiter().then(setBearbeiter);
@@ -30,6 +33,14 @@ export default function Settings() {
   async function gewichtungAendern(ereignis, punkte) {
     await api.punkteGewichtungAendern(ereignis, Number(punkte));
     laden();
+  }
+
+  async function kontakteUebertragen() {
+    if (!vonOwner || !zuOwner) return;
+    setUebernahmeStatus('Übertrage …');
+    const res = await api.bulkZuweisen({ von_owner: vonOwner, owner_kuerzel: zuOwner });
+    setUebernahmeStatus(`${res.aktualisiert} Kontakte von ${vonOwner} an ${zuOwner} übertragen.`);
+    setVonOwner(''); setZuOwner('');
   }
 
   async function importieren(e) {
@@ -70,8 +81,22 @@ export default function Settings() {
         </div>
         <p style={{ fontSize: 12, color: 'var(--sp-text-muted)' }}>
           Deaktivierte Bearbeiter verschwinden aus den Zuweisungs-Dropdowns, bleiben aber in der Aktivitäten-Historie sichtbar.
-          Alle Kontakte eines Bearbeiters übertragen: in der Kontaktliste nach "Owner" filtern, alle auswählen, neu zuweisen.
         </p>
+
+        <p style={{ fontWeight: 600, marginTop: 20, marginBottom: 6, fontSize: 13 }}>Alle Kontakte übertragen</p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select value={vonOwner} onChange={(e) => setVonOwner(e.target.value)}>
+            <option value="">Von …</option>
+            {bearbeiter.map((b) => <option key={b.kuerzel} value={b.kuerzel}>{b.kuerzel}{!b.aktiv ? ' (inaktiv)' : ''}</option>)}
+          </select>
+          <span style={{ fontSize: 13 }}>→</span>
+          <select value={zuOwner} onChange={(e) => setZuOwner(e.target.value)}>
+            <option value="">An …</option>
+            {bearbeiter.map((b) => <option key={b.kuerzel} value={b.kuerzel}>{b.kuerzel}{!b.aktiv ? ' (inaktiv)' : ''}</option>)}
+          </select>
+          <button className="primary" onClick={kontakteUebertragen} disabled={!vonOwner || !zuOwner}>Übertragen</button>
+        </div>
+        {uebernahmeStatus && <p style={{ fontSize: 13 }}>{uebernahmeStatus}</p>}
       </div>
 
       <div className="card">
