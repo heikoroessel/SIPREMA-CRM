@@ -12,6 +12,7 @@ async function req(path, options = {}) {
 export const api = {
   kontakte: (params) => req(`/kontakte?${new URLSearchParams(params)}`),
   kontaktZaehler: () => req('/kontakte/zaehler'),
+  alleKontakteLoeschen: () => req('/kontakte/alle', { method: 'DELETE' }),
   kontakt: (id) => req(`/kontakte/${id}`),
   kontaktAendern: (id, body) => req(`/kontakte/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   kontaktAnlegen: (body) => req('/kontakte', { method: 'POST', body: JSON.stringify(body) }),
