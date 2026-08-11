@@ -1,0 +1,7 @@
+{
+  "name": "siprema-crm",
+  "private": true,
+  "engines": {
+    "node": "20"
+  }
+}
