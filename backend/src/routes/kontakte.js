@@ -169,4 +169,12 @@ router.post('/:id/aktivitaeten', async (req, res) => {
   res.status(201).json(rows[0]);
 });
 
+// DELETE /api/kontakte/alle -> setzt die Kontaktliste komplett zurueck (z.B. vor einem sauberen
+// Re-Import), damit Mehrfach-Importe nicht zu Duplikaten fuehren. Loescht kaskadierend auch
+// Aktivitaeten und Phasen-Historie.
+router.delete('/alle', async (req, res) => {
+  const result = await pool.query('DELETE FROM kontakte');
+  res.json({ geloescht: result.rowCount });
+});
+
 export default router;
