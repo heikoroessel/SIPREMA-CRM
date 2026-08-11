@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 const PHASEN = [
@@ -9,21 +9,23 @@ const PHASEN = [
   { key: 'angebot', label: 'Angebot' },
   { key: 'auftrag', label: 'Auftrag' }
 ];
+const STATUS_LABEL = { offen: 'Offen', verloren: 'Verloren', ruht: 'Ruht' };
 
 // Spalten-Definition fuer die Excel-artige Filterzeile. typ 'text' = Freitextfeld (ILIKE),
 // typ 'auswahl' = Dropdown mit tatsaechlich vorkommenden Werten aus der Datenbank,
-// typ 'bearbeiter' = Dropdown mit den aktiven Bearbeitern.
+// typ 'bearbeiter' = Dropdown mit den aktiven Bearbeitern, typ 'keiner' = kein Filter.
+// mobil: false -> Spalte wird auf schmalen Bildschirmen automatisch ausgeblendet.
 const SPALTEN = [
-  { feld: 'zielgruppe', label: 'Zielgruppe', typ: 'auswahl' },
-  { feld: 'firma', label: 'Firma', typ: 'text' },
-  { feld: 'plz', label: 'PLZ', typ: 'text' },
-  { feld: 'ort', label: 'Ort', typ: 'text' },
-  { feld: 'anrede', label: 'Anrede', typ: 'auswahl' },
-  { feld: 'vorname', label: 'Vorname', typ: 'text' },
-  { feld: 'nachname', label: 'Nachname', typ: 'text' },
-  { feld: 'quelle', label: 'Quelle', typ: 'auswahl' },
-  { feld: 'wiedervorlage', label: 'Wiedervorlage', typ: 'keiner' },
-  { feld: 'owner_kuerzel', label: 'Owner', typ: 'bearbeiter' }
+  { feld: 'zielgruppe', label: 'Zielgruppe', typ: 'auswahl', mobil: false },
+  { feld: 'firma', label: 'Firma', typ: 'text', mobil: true },
+  { feld: 'plz', label: 'PLZ', typ: 'text', mobil: false },
+  { feld: 'ort', label: 'Ort', typ: 'text', mobil: true },
+  { feld: 'anrede', label: 'Anrede', typ: 'auswahl', mobil: false },
+  { feld: 'vorname', label: 'Vorname', typ: 'text', mobil: true },
+  { feld: 'nachname', label: 'Nachname', typ: 'text', mobil: true },
+  { feld: 'quelle', label: 'Quelle', typ: 'auswahl', mobil: false },
+  { feld: 'wiedervorlage', label: 'Wiedervorlage', typ: 'keiner', mobil: false },
+  { feld: 'owner_kuerzel', label: 'Owner', typ: 'bearbeiter', mobil: true }
 ];
 
 export default function ContactList() {
@@ -50,9 +52,14 @@ export default function ContactList() {
   function baueParams() {
     const params = { pageSize: 200 };
     if (phase) params.phase = phase;
-    if (nurNichtZugewiesen) params.owner = 'none';
+
+    // Owner-Filter: entweder die konkrete Spaltenauswahl (Vorrang) oder der "Nicht zugewiesen"-Chip.
+    // Backend erwartet dafuer den Query-Parameter "owner" (nicht "owner_kuerzel") - das war der Bug.
+    if (spaltenFilter.owner_kuerzel) params.owner = spaltenFilter.owner_kuerzel;
+    else if (nurNichtZugewiesen) params.owner = 'none';
+
     for (const [feld, wert] of Object.entries(spaltenFilter)) {
-      if (wert) params[feld] = wert;
+      if (wert && feld !== 'owner_kuerzel') params[feld] = wert;
     }
     return params;
   }
@@ -141,16 +148,18 @@ export default function ContactList() {
             <tr>
               <th style={{ width: 28 }}></th>
               <th style={{ cursor: 'pointer' }} onClick={() => sortiereNach('phase')}>Phase{pfeil('phase')}</th>
+              <th style={{ cursor: 'pointer' }} onClick={() => sortiereNach('ergebnis')}>Status{pfeil('ergebnis')}</th>
               {SPALTEN.map((s) => (
-                <th key={s.feld} style={{ cursor: 'pointer' }} onClick={() => sortiereNach(s.feld)}>{s.label}{pfeil(s.feld)}</th>
+                <th key={s.feld} className={s.mobil ? '' : 'col-hide-mobile'} style={{ cursor: 'pointer' }} onClick={() => sortiereNach(s.feld)}>{s.label}{pfeil(s.feld)}</th>
               ))}
-              <th style={{ cursor: 'pointer' }} onClick={() => sortiereNach('tage_in_phase')}>Tage in Phase{pfeil('tage_in_phase')}</th>
+              <th className="col-hide-mobile" style={{ cursor: 'pointer' }} onClick={() => sortiereNach('tage_in_phase')}>Tage in Phase{pfeil('tage_in_phase')}</th>
             </tr>
             <tr>
               <th></th>
               <th></th>
+              <th></th>
               {SPALTEN.map((s) => (
-                <th key={s.feld}>
+                <th key={s.feld} className={s.mobil ? '' : 'col-hide-mobile'}>
                   {s.typ === 'text' && (
                     <input type="text" placeholder="…" style={{ width: '100%' }} value={spaltenFilter[s.feld] || ''} onChange={(e) => filterAendern(s.feld, e.target.value)} />
                   )}
@@ -168,7 +177,7 @@ export default function ContactList() {
                   )}
                 </th>
               ))}
-              <th></th>
+              <th className="col-hide-mobile"></th>
             </tr>
           </thead>
           <tbody>
@@ -178,26 +187,27 @@ export default function ContactList() {
                   <input type="checkbox" checked={ausgewaehlt.has(k.id)} onChange={() => toggleAuswahl(k.id)} />
                 </td>
                 <td onClick={() => navigate(`/kontakte/${k.id}`)}>
-                  <span className={`badge badge-${k.ergebnis !== 'offen' ? (k.ergebnis === 'verloren' ? 'verloren' : 'ruht') : k.phase}`}>
-                    {k.ergebnis !== 'offen' ? k.ergebnis : PHASEN.find((p) => p.key === k.phase)?.label || k.phase}
-                  </span>
+                  <span className={`badge badge-${k.phase}`}>{PHASEN.find((p) => p.key === k.phase)?.label || k.phase}</span>
                 </td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.zielgruppe || '–'}</td>
+                <td onClick={() => navigate(`/kontakte/${k.id}`)}>
+                  <span className={`badge badge-status-${k.ergebnis}`}>{STATUS_LABEL[k.ergebnis] || k.ergebnis}</span>
+                </td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.zielgruppe || '–'}</td>
                 <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.firma || '–'}</td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.plz || '–'}</td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.plz || '–'}</td>
                 <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.ort || '–'}</td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.anrede || '–'}</td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.anrede || '–'}</td>
                 <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.vorname || '–'}</td>
                 <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.nachname || '–'}</td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.quelle || '–'}</td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.wiedervorlage ? new Date(k.wiedervorlage).toLocaleDateString('de-DE') : '–'}</td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.quelle || '–'}</td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.wiedervorlage ? new Date(k.wiedervorlage).toLocaleDateString('de-DE') : '–'}</td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <select value={k.owner_kuerzel || ''} onChange={(e) => ownerAendern(k.id, e.target.value)}>
                     <option value="">–</option>
                     {bearbeiter.map((b) => <option key={b.kuerzel} value={b.kuerzel}>{b.kuerzel}</option>)}
                   </select>
                 </td>
-                <td onClick={() => navigate(`/kontakte/${k.id}`)}>{k.tage_in_phase}</td>
+                <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.tage_in_phase}</td>
               </tr>
             ))}
           </tbody>

@@ -22,6 +22,8 @@ a { color: var(--sp-teal-600); text-decoration: none; }
 }
 .app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--sp-text); }
 .app-header .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sp-teal-600); }
+.nav-link { font-size: 14px; color: var(--sp-text-secondary); font-weight: 500; }
+.nav-link:hover { color: var(--sp-teal-600); }
 .punkte-mittig { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 14px; white-space: nowrap; }
 .punkte-badge { display: flex; align-items: center; gap: 10px; font-size: 13px; justify-self: end; }
 .punkte-bar { height: 8px; background: var(--sp-gray-border); border-radius: 999px; overflow: hidden; }
@@ -59,6 +61,14 @@ tr.row-clickable:hover { background: #FAFAF8; }
 .badge-auftrag { background: #EAF3DE; color: #3B6D11; }
 .badge-verloren { background: #FCEBEB; color: #A32D2D; }
 .badge-ruht { background: #F1EFE8; color: var(--sp-text-muted); }
+
+.badge-status-offen { background: var(--sp-teal-50); color: var(--sp-teal-900); }
+.badge-status-verloren { background: #FCEBEB; color: #A32D2D; }
+.badge-status-ruht { background: #F1EFE8; color: var(--sp-text-muted); }
+
+@media (max-width: 640px) {
+  .col-hide-mobile { display: none; }
+}
 
 select, input[type=text], input[type=date], textarea {
   font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--sp-gray-border); border-radius: 6px;

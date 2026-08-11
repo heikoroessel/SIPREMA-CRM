@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 const PHASEN = ['unbearbeitet', 'in_kontakt', 'termin', 'angebot', 'auftrag'];
@@ -50,6 +50,7 @@ export default function ContactDetail() {
 
   return (
     <div>
+      <Link to="/" style={{ fontSize: 13, display: 'inline-block', marginBottom: 12 }}>← Zurück zur Liste</Link>
       <div style={{ marginBottom: 16 }}>
         <p style={{ fontWeight: 600, fontSize: 18, margin: 0 }}>{k.firma}</p>
         <p style={{ color: 'var(--sp-text-muted)', fontSize: 13, margin: 0 }}>{k.ort} · {k.zielgruppe} · Owner {k.owner_kuerzel || '– nicht zugewiesen –'}</p>

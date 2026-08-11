@@ -26,7 +26,10 @@ export default function Header() {
 
   return (
     <div className="app-header">
-      <Link to="/" className="brand"><span className="dot" /> SIPREMA CRM</Link>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <Link to="/" className="brand"><span className="dot" /> SIPREMA CRM</Link>
+        <Link to="/" className="nav-link">Kontakte</Link>
+      </div>
 
       <div className="punkte-mittig">
         {kuerzel ? (
