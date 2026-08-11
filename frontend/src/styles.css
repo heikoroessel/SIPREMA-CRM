@@ -1,0 +1,85 @@
+:root {
+  --sp-teal-50: #E1F5EE;
+  --sp-teal-100: #9FE1CB;
+  --sp-teal-400: #1D9E75;
+  --sp-teal-600: #0F6E56;
+  --sp-teal-900: #04342C;
+  --sp-gray-bg: #F7F7F5;
+  --sp-gray-border: #E1E0DA;
+  --sp-text: #26251F;
+  --sp-text-muted: #83817A;
+  --sp-amber: #EF9F27;
+  --sp-red: #E24B4A;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--sp-gray-bg); color: var(--sp-text); }
+a { color: var(--sp-teal-600); text-decoration: none; }
+
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--sp-gray-border);
+}
+.app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.app-header .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sp-teal-600); }
+.punkte-badge { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.punkte-bar { width: 60px; height: 6px; background: var(--sp-gray-border); border-radius: 999px; overflow: hidden; }
+.punkte-bar > div { height: 100%; background: var(--sp-teal-600); }
+.kuerzel-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--sp-teal-50); color: var(--sp-teal-900);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; cursor: pointer;
+  border: none;
+}
+
+.container { padding: 20px; max-width: 1100px; margin: 0 auto; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  border: 1px solid var(--sp-gray-border); background: #fff; border-radius: 999px;
+  padding: 6px 14px; font-size: 13px; cursor: pointer; color: var(--sp-text-muted);
+}
+.chip.active { background: var(--sp-teal-50); border-color: var(--sp-teal-600); color: var(--sp-teal-900); font-weight: 600; }
+
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--sp-gray-border); }
+th { color: var(--sp-text-muted); font-weight: 500; }
+tr.row-clickable { cursor: pointer; }
+tr.row-clickable:hover { background: #FAFAF8; }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.badge-unbearbeitet { background: #EFEEEA; color: var(--sp-text-muted); }
+.badge-in_kontakt { background: #E6F1FB; color: #185FA5; }
+.badge-termin { background: var(--sp-teal-50); color: var(--sp-teal-900); }
+.badge-angebot { background: #FAEEDA; color: #854F0B; }
+.badge-auftrag { background: #EAF3DE; color: #3B6D11; }
+.badge-verloren { background: #FCEBEB; color: #A32D2D; }
+.badge-ruht { background: #F1EFE8; color: var(--sp-text-muted); }
+
+select, input[type=text], input[type=date], textarea {
+  font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--sp-gray-border); border-radius: 6px;
+}
+
+.card { background: #fff; border: 1px solid var(--sp-gray-border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.stepper { display: flex; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: #fff; padding: 12px 0; }
+.stepper .step { flex: 1; text-align: center; }
+.stepper .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sp-gray-border); margin: 0 auto 4px; }
+.stepper .dot.done { background: var(--sp-teal-600); }
+.stepper .dot.current { background: var(--sp-teal-600); box-shadow: 0 0 0 3px var(--sp-teal-50); width: 14px; height: 14px; }
+.stepper .line { flex: 1; height: 2px; background: var(--sp-gray-border); }
+.stepper .line.done { background: var(--sp-teal-600); }
+.stepper .label { font-size: 11px; color: var(--sp-text-muted); }
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; font-size: 13px; }
+.field-grid label { display: block; color: var(--sp-text-muted); margin-bottom: 4px; font-size: 12px; }
+
+.aktivitaet { display: flex; gap: 10px; margin-bottom: 12px; font-size: 13px; }
+.aktivitaet .meta { color: var(--sp-text-muted); min-width: 90px; font-size: 12px; }
+
+button.primary {
+  background: var(--sp-teal-600); color: #fff; border: none; border-radius: 6px; padding: 8px 16px;
+  font-size: 13px; cursor: pointer;
+}
+button.secondary {
+  background: #fff; border: 1px solid var(--sp-gray-border); border-radius: 6px; padding: 8px 16px;
+  font-size: 13px; cursor: pointer;
+}
