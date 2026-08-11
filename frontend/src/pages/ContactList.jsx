@@ -16,6 +16,7 @@ export default function ContactList() {
   const [phase, setPhase] = useState('');
   const [nurNichtZugewiesen, setNurNichtZugewiesen] = useState(false);
   const [plz, setPlz] = useState('');
+  const [suche, setSuche] = useState('');
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [ausgewaehlt, setAusgewaehlt] = useState(new Set());
@@ -24,13 +25,17 @@ export default function ContactList() {
   useEffect(() => { api.kontaktZaehler().then(setZaehler); api.bearbeiter(true).then(setBearbeiter); }, []);
 
   useEffect(() => {
-    const params = { pageSize: 100 };
-    if (phase) params.phase = phase;
-    if (nurNichtZugewiesen) params.owner = 'none';
-    if (plz) params.plz = plz;
-    api.kontakte(params).then((r) => { setItems(r.items); setTotal(r.total); });
-    setAusgewaehlt(new Set());
-  }, [phase, nurNichtZugewiesen, plz]);
+    const timer = setTimeout(() => {
+      const params = { pageSize: 100 };
+      if (phase) params.phase = phase;
+      if (nurNichtZugewiesen) params.owner = 'none';
+      if (plz) params.plz = plz;
+      if (suche) params.q = suche;
+      api.kontakte(params).then((r) => { setItems(r.items); setTotal(r.total); });
+      setAusgewaehlt(new Set());
+    }, suche ? 300 : 0); // kurze Verzoegerung beim Tippen, damit nicht bei jedem Buchstaben eine Anfrage rausgeht
+    return () => clearTimeout(timer);
+  }, [phase, nurNichtZugewiesen, plz, suche]);
 
   function toggleAuswahl(id) {
     setAusgewaehlt((prev) => {
@@ -53,6 +58,7 @@ export default function ContactList() {
     if (phase) params.phase = phase;
     if (nurNichtZugewiesen) params.owner = 'none';
     if (plz) params.plz = plz;
+    if (suche) params.q = suche;
     const r = await api.kontakte(params);
     setItems(r.items); setTotal(r.total); setAusgewaehlt(new Set());
     api.kontaktZaehler().then(setZaehler);
@@ -73,6 +79,7 @@ export default function ContactList() {
           Nicht zugewiesen {zaehler.nicht_zugewiesen}
         </span>
         <input type="text" placeholder="PLZ-Bereich, z.B. 74" value={plz} onChange={(e) => setPlz(e.target.value)} style={{ width: 140 }} />
+        <input type="text" placeholder="Suche: Firma oder Nachname" value={suche} onChange={(e) => setSuche(e.target.value)} style={{ width: 200 }} />
       </div>
 
       {ausgewaehlt.size > 0 && (
