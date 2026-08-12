@@ -17,14 +17,33 @@ Die Datenbank-Struktur wird beim Start automatisch erweitert
 (`CREATE TABLE/COLUMN IF NOT EXISTS`) – eure bereits importierten Kontakte
 bleiben erhalten, es ist **kein Reset nötig**.
 
-**Neu zu pflegen nach diesem Update:** Unter Einstellungen → "Bearbeiter
-verwalten" sind die persönlichen **Jahresziele** (Kontakte/Termine/Angebote/
-Aufträge) für jeden Bearbeiter einmalig auf 0 zurückgesetzt worden (da sie
-vorher als Monatswerte galten) – bitte einmal die echten Jahreswerte von Hand
-eintragen. Die Zählung der Fortschrittsbalken läuft ab dem Tag des
-Deployments dieses Updates (unter Einstellungen → "Reporting-Zählstart"
-sichtbar/änderbar) – ältere Aktivitäten/Phasenwechsel fließen bewusst nicht
-rückwirkend ein.
+**Neu zu pflegen nach diesem Update:** Ab jetzt ist ein echtes Login mit
+Passwort aktiv. Beim ersten Anmeldeversuch mit einem Kürzel wird das
+eingegebene Passwort automatisch als das neue Passwort für dieses Kürzel
+übernommen (mit Bestätigungsfeld gegen Tippfehler) – niemand muss vorher
+etwas einrichten. Alle bisherigen Sessions/Logins (auch aus der alten
+Kürzel-Auswahl) sind ungültig, jeder muss sich einmal neu anmelden.
+
+## Login & Zugriffsschutz (neu)
+
+- **Echtes Login mit Passwort statt reiner Namensauswahl.** Beim ersten Login
+  eines Kürzels wird das eingegebene Passwort (zweimal zur Bestätigung)
+  direkt als neues Passwort übernommen; danach normales Passwort-Login.
+  Passwörter werden gehasht gespeichert (bcrypt), nie im Klartext
+- **Serverseitig abgesichert:** nicht nur die Oberfläche verlangt ein Login –
+  auch die API selbst verlangt eine gültige Session (Token), ausgenommen
+  Login selbst und die reine Kürzel-Liste für die Anmeldemaske
+- **Keine Rollen:** wer eingeloggt ist, hat wie bisher alle Rechte
+- **Passwort-Reset:** in "Bearbeiter verwalten" kann jeder eingeloggte
+  Kollege das Passwort eines beliebigen Kürzels zurücksetzen (Button
+  "Zurücksetzen") – beim nächsten Login für dieses Kürzel wird dann wieder
+  ein neues Passwort vergeben, wie beim allerersten Mal
+- **Anmeldung bleibt dauerhaft bestehen** (kein täglicher Neu-Login nötig),
+  bis man sich aktiv über "Abmelden" in der Kopfzeile abmeldet oder das
+  eigene Passwort zurückgesetzt wird
+- Das alte "Wer bist du?"-Popup ist entfallen – das Login übernimmt jetzt
+  direkt diese Rolle, dieselbe Kürzel-Identität steuert wie bisher die
+  automatisch gefilterte Bearbeiterliste
 
 ## Was ist neu gegenüber der letzten Version (Reporting: Jahresbalken + manuelle Ergänzung)
 
@@ -45,6 +64,11 @@ rückwirkend ein.
   Kontaktierungen außerhalb der Liste (E-Mail-Kampagnen, LinkedIn o.ä.)
   nachgetragen werden können. Mehrfache Eingaben am selben Tag werden addiert
   (nicht überschrieben) und fließen direkt in Monats- und Jahreszähler ein
+- **Ist-Werte in "Bearbeiter verwalten" editierbar:** neben jedem Jahresziel
+  zeigt eine zweite Spalte "Ist (Monat)" den aktuell errechneten Monatswert
+  – direkt überschreibbar (z.B. um in der Testphase auf 0 zurückzusetzen).
+  Die Korrektur wird technisch wie eine manuelle Ergänzung (siehe oben)
+  gespeichert und wirkt automatisch auch auf den Jahreswert mit
 
 ## Was ist neu gegenüber der letzten Version
 
@@ -134,9 +158,13 @@ ist nichts weiter zu tun, außer den neuen Datei-Inhalt auf GitHub zu
   Monats-Kennzahlen
 - `status_optionen` – frei erweiterbare Werte für das Status-Feld
 - `bearbeiter` – inkl. `ziel_kontakte`, `ziel_termine`, `ziel_angebote`,
-  `ziel_auftraege` (persönliche **Jahresziele** für die Kopfzeilen-Boxen)
+  `ziel_auftraege` (persönliche **Jahresziele** für die Kopfzeilen-Boxen) und
+  `passwort_hash` (bcrypt-Hash fürs Login, `NULL` = noch kein Passwort
+  gesetzt → nächster Login-Versuch löst die Ersteinrichtung aus)
 - `manuelle_ergaenzung` – manuelle Tages-Nachträge (aktuell nur "Kontakte"),
   ein Eintrag pro Bearbeiter/Kennzahl/Tag, wird bei mehrfacher Eingabe am
   selben Tag addiert
 - `firmen_einstellungen` – u.a. `zaehl_start_datum` (ab wann die Reporting-
-  Kennzahlen zählen)
+  Kennzahlen zählen) und `session_secret` (zufällig generiert beim ersten
+  Start nach diesem Update, signiert die Login-Sessions – nicht manuell
+  pflegen)

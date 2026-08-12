@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { useBearbeiterContext } from '../context/BearbeiterContext.jsx';
 
 export default function Settings() {
+  const { kuerzel } = useBearbeiterContext();
   const [bearbeiter, setBearbeiter] = useState([]);
   const [neuKuerzel, setNeuKuerzel] = useState('');
   const [neuName, setNeuName] = useState('');
@@ -14,13 +16,37 @@ export default function Settings() {
   const [neuerStatusWert, setNeuerStatusWert] = useState('');
   const [neuerStatusLabel, setNeuerStatusLabel] = useState('');
   const [zaehlStart, setZaehlStart] = useState('');
+  const [istWerte, setIstWerte] = useState({});
+
+  const KENNZAHLEN_SETTINGS = [
+    { feld: 'kontakte', label: 'Kontakte' },
+    { feld: 'termine', label: 'Termine' },
+    { feld: 'angebote', label: 'Angebote' },
+    { feld: 'auftraege', label: 'Aufträge' }
+  ];
 
   function laden() {
-    api.bearbeiter().then(setBearbeiter);
+    if (!kuerzel) return;
+    api.bearbeiter().then((liste) => {
+      setBearbeiter(liste);
+      Promise.all(liste.map((b) => api.meinePunkte(b.kuerzel).then((p) => [b.kuerzel, p])))
+        .then((paare) => setIstWerte(Object.fromEntries(paare)));
+    });
     api.statusOptionen().then(setStatusOptionen);
     api.firmaEinstellungen().then((e) => setZaehlStart(e.zaehl_start_datum || ''));
   }
-  useEffect(laden, []);
+  useEffect(laden, [kuerzel]);
+
+  // Ist-Wert (Monat) manuell korrigieren: Differenz zum aktuell berechneten Wert wird als
+  // "manuelle Ergaenzung" von heute gespeichert (gleicher Mechanismus wie die manuelle
+  // Kontakte-Eingabe in der Kopfzeile) - wirkt dadurch auch auf den Jahreswert mit.
+  async function istKorrigieren(kuerzel, kennzahl, neuerWert) {
+    const aktuell = istWerte[kuerzel]?.[kennzahl]?.monat?.ist || 0;
+    const delta = Number(neuerWert) - aktuell;
+    if (!delta) return;
+    await api.manuelleErgaenzung(kuerzel, kennzahl, delta);
+    laden();
+  }
 
   async function zaehlStartAendern(wert) {
     await api.firmaEinstellungAendern('zaehl_start_datum', wert);
@@ -52,6 +78,11 @@ export default function Settings() {
     laden();
   }
 
+  async function passwortZuruecksetzen(kuerzel) {
+    if (!confirm(`Passwort von ${kuerzel} wirklich zurücksetzen? Beim nächsten Login muss ${kuerzel} ein neues Passwort vergeben.`)) return;
+    await api.passwortZuruecksetzen(kuerzel);
+  }
+
   async function kontakteUebertragen() {
     if (!vonOwner || !zuOwner) return;
     setUebernahmeStatus('Übertrage …');
@@ -66,7 +97,11 @@ export default function Settings() {
     setImportStatus('Import läuft …');
     const form = new FormData();
     form.append('datei', datei);
-    const res = await fetch('/api/import/masterliste', { method: 'POST', body: form });
+    const res = await fetch('/api/import/masterliste', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('session_token') || ''}` },
+      body: form
+    });
     const json = await res.json();
     setImportStatus(res.ok
       ? `${json.importiert} Kontakte importiert (${json.uebersprungen} übersprungen von ${json.gesamt}).`
@@ -91,8 +126,22 @@ export default function Settings() {
             <thead>
               <tr>
                 <th>Kürzel</th><th>Name</th><th>Std./Woche</th>
-                <th>Jahresziel Kontakte</th><th>Jahresziel Termine</th><th>Jahresziel Angebote</th><th>Jahresziel Aufträge</th>
+                {KENNZAHLEN_SETTINGS.map((k) => (
+                  <th key={k.feld} colSpan={2}>{k.label}</th>
+                ))}
                 <th>Aktiv</th>
+                <th>Passwort</th>
+              </tr>
+              <tr>
+                <th></th><th></th><th></th>
+                {KENNZAHLEN_SETTINGS.map((k) => (
+                  <React.Fragment key={k.feld}>
+                    <th style={{ fontWeight: 400 }}>Jahresziel</th>
+                    <th style={{ fontWeight: 400 }}>Ist (Monat)</th>
+                  </React.Fragment>
+                ))}
+                <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -101,16 +150,35 @@ export default function Settings() {
                   <td>{b.kuerzel}</td>
                   <td><input type="text" defaultValue={b.name} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'name', e.target.value)} /></td>
                   <td><input type="text" defaultValue={b.stunden_pro_woche} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'stunden_pro_woche', Number(e.target.value))} /></td>
-                  <td><input type="text" defaultValue={b.ziel_kontakte} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_kontakte', Number(e.target.value))} /></td>
-                  <td><input type="text" defaultValue={b.ziel_termine} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_termine', Number(e.target.value))} /></td>
-                  <td><input type="text" defaultValue={b.ziel_angebote} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_angebote', Number(e.target.value))} /></td>
-                  <td><input type="text" defaultValue={b.ziel_auftraege} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_auftraege', Number(e.target.value))} /></td>
+                  {KENNZAHLEN_SETTINGS.map((k) => (
+                    <React.Fragment key={k.feld}>
+                      <td>
+                        <input
+                          type="text" defaultValue={b[`ziel_${k.feld}`]}
+                          style={{ width: 55 }}
+                          onBlur={(e) => bearbeiterAendern(b.kuerzel, `ziel_${k.feld}`, Number(e.target.value))}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text" key={istWerte[b.kuerzel]?.[k.feld]?.monat?.ist}
+                          defaultValue={istWerte[b.kuerzel]?.[k.feld]?.monat?.ist ?? 0}
+                          style={{ width: 50 }}
+                          onBlur={(e) => istKorrigieren(b.kuerzel, k.feld, e.target.value)}
+                        />
+                      </td>
+                    </React.Fragment>
+                  ))}
                   <td><input type="checkbox" checked={b.aktiv} onChange={(e) => bearbeiterAendern(b.kuerzel, 'aktiv', e.target.checked)} /></td>
+                  <td><button className="secondary" onClick={() => passwortZuruecksetzen(b.kuerzel)}>Zurücksetzen</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 8 }}>
+          "Ist (Monat)" zeigt den aktuell errechneten Monatswert und ist überschreibbar (z.B. zum Zurücksetzen in der Testphase) – die Korrektur wirkt automatisch auch auf den Jahreswert mit.
+        </p>
         <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <input type="text" placeholder="Kürzel" style={{ width: 80 }} value={neuKuerzel} onChange={(e) => setNeuKuerzel(e.target.value)} />
           <input type="text" placeholder="Name" value={neuName} onChange={(e) => setNeuName(e.target.value)} />

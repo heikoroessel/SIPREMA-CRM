@@ -70,7 +70,7 @@ function KennzahlBox({ label, daten, manuell, kuerzel, onErgaenzt }) {
 }
 
 export default function Header() {
-  const { kuerzel, setKuerzel, bearbeiter } = useBearbeiterContext();
+  const { kuerzel, logout } = useBearbeiterContext();
   const [punkte, setPunkte] = useState(null);
 
   function laden() {
@@ -84,12 +84,8 @@ export default function Header() {
       <div className="app-header-zeile1">
         <Link to="/" className="brand"><span className="dot" /> SIPREMA CRM</Link>
         <div className="punkte-badge">
-          <select value={kuerzel} onChange={(e) => setKuerzel(e.target.value)}>
-            <option value="">Wer bist du?</option>
-            {bearbeiter.map((b) => (
-              <option key={b.kuerzel} value={b.kuerzel}>{b.kuerzel}</option>
-            ))}
-          </select>
+          {kuerzel && <span className="eingeloggt-als">{kuerzel}</span>}
+          {kuerzel && <span className="abmelden-link" onClick={logout}>Abmelden</span>}
           <Link to="/einstellungen" className="zahnrad" title="Einstellungen">⚙</Link>
         </div>
       </div>

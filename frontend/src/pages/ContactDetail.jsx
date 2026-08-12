@@ -27,10 +27,13 @@ export default function ContactDetail() {
 
   function laden() { api.kontakt(id).then(setK); }
   useEffect(() => {
+    if (!kuerzel) return;
     laden();
     api.bearbeiter(true).then(setBearbeiter);
     api.statusOptionen().then(setStatusOptionen);
-  }, [id]);
+  }, [id, kuerzel]);
+
+  if (!kuerzel) return null;
 
   if (!k) return <p>Lädt …</p>;
 

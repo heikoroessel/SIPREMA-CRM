@@ -100,9 +100,9 @@ router.get('/:kuerzel', async (req, res) => {
       Number(aktivitaetenJahr[0].count) + (wJ.in_kontakt || 0) + (mJ.kontakte || 0),
       zieleJahr.ziel_kontakte
     ),
-    termine: kennzahl(wM.termin || 0, wJ.termin || 0, zieleJahr.ziel_termine),
-    angebote: kennzahl(wM.angebot || 0, wJ.angebot || 0, zieleJahr.ziel_angebote),
-    auftraege: kennzahl(wM.auftrag || 0, wJ.auftrag || 0, zieleJahr.ziel_auftraege)
+    termine: kennzahl((wM.termin || 0) + (mM.termine || 0), (wJ.termin || 0) + (mJ.termine || 0), zieleJahr.ziel_termine),
+    angebote: kennzahl((wM.angebot || 0) + (mM.angebote || 0), (wJ.angebot || 0) + (mJ.angebote || 0), zieleJahr.ziel_angebote),
+    auftraege: kennzahl((wM.auftrag || 0) + (mM.auftraege || 0), (wJ.auftrag || 0) + (mJ.auftraege || 0), zieleJahr.ziel_auftraege)
   });
 });
 

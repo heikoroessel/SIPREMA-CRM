@@ -25,6 +25,9 @@ a { color: var(--sp-teal-600); text-decoration: none; }
 .app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--sp-text); font-size: 15px; }
 .app-header .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sp-teal-600); }
 .punkte-badge { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.eingeloggt-als { font-weight: 600; color: var(--sp-teal-900); font-size: 13px; }
+.abmelden-link { font-size: 12px; color: var(--sp-text-muted); cursor: pointer; }
+.abmelden-link:hover { color: var(--sp-red); text-decoration: underline; }
 .zahnrad {
   width: 32px; height: 32px; border-radius: 50%; background: var(--sp-gray-bg); color: var(--sp-text);
   display: flex; align-items: center; justify-content: center; font-size: 16px; text-decoration: none;

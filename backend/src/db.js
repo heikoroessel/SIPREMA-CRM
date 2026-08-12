@@ -1,4 +1,5 @@
 import pg from 'pg';
+import crypto from 'node:crypto';
 
 const { Pool } = pg;
 
@@ -20,12 +21,14 @@ export async function initSchema() {
       ziel_termine integer NOT NULL DEFAULT 0,
       ziel_angebote integer NOT NULL DEFAULT 0,
       ziel_auftraege integer NOT NULL DEFAULT 0,
+      passwort_hash text,
       erstellt_am timestamptz NOT NULL DEFAULT now()
     );
     ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_kontakte integer NOT NULL DEFAULT 0;
     ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_termine integer NOT NULL DEFAULT 0;
     ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_angebote integer NOT NULL DEFAULT 0;
     ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_auftraege integer NOT NULL DEFAULT 0;
+    ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS passwort_hash text;
 
     CREATE TABLE IF NOT EXISTS punkte_gewichtung (
       ereignis text PRIMARY KEY,
@@ -171,5 +174,20 @@ export async function initSchema() {
       ('verloren', 'Verloren', 2),
       ('ruht', 'Ruht', 3)
     `);
+  }
+
+  // Geheimnis zum Signieren der Login-Sessions: einmalig zufaellig erzeugt und in der DB
+  // abgelegt (statt einer manuell zu pflegenden Umgebungsvariable), damit Sessions auch einen
+  // Server-Neustart ueberstehen und keine zusaetzliche Railway-Konfiguration noetig ist.
+  const { rows: secretRows } = await pool.query(
+    `SELECT 1 FROM firmen_einstellungen WHERE key = 'session_secret'`
+  );
+  if (!secretRows.length) {
+    const zufall = crypto.randomBytes(48).toString('hex');
+    await pool.query(
+      `INSERT INTO firmen_einstellungen (key, value) VALUES ('session_secret', $1)
+       ON CONFLICT (key) DO NOTHING`,
+      [zufall]
+    );
   }
 }

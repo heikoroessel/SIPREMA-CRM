@@ -51,10 +51,11 @@ export default function ContactList() {
   const sichtbareSpalten = SPALTEN.filter((s) => !(istBearbeiterAnsicht && s.nurVollstaendig));
 
   useEffect(() => {
+    if (!kuerzel) return;
     api.kontaktZaehler().then(setZaehler);
     Promise.all(['zielgruppe', 'quelle', 'anrede'].map((f) => api.werte(f).then((v) => [f, v])))
       .then((paare) => setWerte(Object.fromEntries(paare)));
-  }, []);
+  }, [kuerzel]);
 
   function baueParams() {
     const params = { pageSize: 200 };
@@ -79,6 +80,7 @@ export default function ContactList() {
   }
 
   useEffect(() => {
+    if (!kuerzel) return;
     const timer = setTimeout(() => { neuLaden(); setAusgewaehlt(new Set()); }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
