@@ -13,6 +13,7 @@ export const api = {
   kontakte: (params) => req(`/kontakte?${new URLSearchParams(params)}`),
   kontaktZaehler: () => req('/kontakte/zaehler'),
   alleKontakteLoeschen: () => req('/kontakte/alle', { method: 'DELETE' }),
+  kontaktLoeschen: (id) => req(`/kontakte/${id}`, { method: 'DELETE' }),
   kontakt: (id) => req(`/kontakte/${id}`),
   kontaktAendern: (id, body) => req(`/kontakte/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   kontaktAnlegen: (body) => req('/kontakte', { method: 'POST', body: JSON.stringify(body) }),
@@ -30,5 +31,6 @@ export const api = {
   firmaEinstellungAendern: (key, value) => req(`/settings/firma/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
   werte: (feld) => req(`/kontakte/werte/${feld}`),
   meinePunkte: (kuerzel) => req(`/punkte/${kuerzel}`),
+  manuelleErgaenzung: (kuerzel, kennzahl, anzahl) => req('/punkte/manuell', { method: 'POST', body: JSON.stringify({ kuerzel, kennzahl, anzahl }) }),
   exportCsvUrl: (params) => `${BASE}/kontakte/export.csv?${new URLSearchParams(params)}`
 };

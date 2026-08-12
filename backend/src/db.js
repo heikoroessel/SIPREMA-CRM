@@ -88,6 +88,16 @@ export async function initSchema() {
       geaendert_am timestamptz NOT NULL DEFAULT now()
     );
 
+    CREATE TABLE IF NOT EXISTS manuelle_ergaenzung (
+      id serial PRIMARY KEY,
+      kuerzel text NOT NULL REFERENCES bearbeiter(kuerzel) ON DELETE CASCADE,
+      kennzahl text NOT NULL,
+      datum date NOT NULL,
+      anzahl integer NOT NULL DEFAULT 0,
+      aktualisiert_am timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (kuerzel, kennzahl, datum)
+    );
+
     CREATE TABLE IF NOT EXISTS aktivitaeten (
       id serial PRIMARY KEY,
       kontakt_id integer NOT NULL REFERENCES kontakte(id) ON DELETE CASCADE,
@@ -127,6 +137,30 @@ export async function initSchema() {
       ('vollzeit_stunden_woche', '40'),
       ('sollpunkte_pro_vollzeit_woche', '250')
     `);
+  }
+
+  // Zaehlstart fuer die Reporting-Kennzahlen (Monat + Jahr): wird beim allerersten Start nach
+  // diesem Update auf das heutige Datum gesetzt und danach NIE wieder ueberschrieben (sonst
+  // wuerden bei jedem Server-Neustart bereits erfasste Werte verloren gehen). Ist/Soll zaehlen
+  // ab diesem Datum, nicht rueckwirkend.
+  await pool.query(
+    `INSERT INTO firmen_einstellungen (key, value) VALUES ('zaehl_start_datum', CURRENT_DATE::text)
+     ON CONFLICT (key) DO NOTHING`
+  );
+
+  // Einmalige Migration: Bearbeiter-Ziele von Monats- auf Jahreswerte umgestellt -> bestehende
+  // (nun falsch interpretierte) Werte einmalig auf 0 zuruecksetzen, damit sie neu als Jahreswerte
+  // eingetragen werden. Guard verhindert, dass das bei jedem Neustart erneut passiert.
+  const { rows: migriert } = await pool.query(
+    `SELECT 1 FROM firmen_einstellungen WHERE key = 'ziele_auf_jahr_migriert'`
+  );
+  if (!migriert.length) {
+    await pool.query(
+      `UPDATE bearbeiter SET ziel_kontakte = 0, ziel_termine = 0, ziel_angebote = 0, ziel_auftraege = 0`
+    );
+    await pool.query(
+      `INSERT INTO firmen_einstellungen (key, value) VALUES ('ziele_auf_jahr_migriert', 'true')`
+    );
   }
 
   const { rows: statusCount } = await pool.query('SELECT count(*) FROM status_optionen');

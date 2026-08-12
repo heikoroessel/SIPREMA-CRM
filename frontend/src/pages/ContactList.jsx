@@ -125,6 +125,13 @@ export default function ContactList() {
     api.kontaktZaehler().then(setZaehler);
   }
 
+  async function kontaktLoeschen(id, firma) {
+    if (!confirm(`Kontakt "${firma || id}" wirklich unwiderruflich löschen (inkl. Aktivitäten-Historie)?`)) return;
+    await api.kontaktLoeschen(id);
+    await neuLaden();
+    api.kontaktZaehler().then(setZaehler);
+  }
+
   function pfeil(spalte) {
     if (istBearbeiterAnsicht || sortSpalte !== spalte) return '';
     return sortRichtung === 'auf' ? ' ▲' : ' ▼';
@@ -194,6 +201,7 @@ export default function ContactList() {
                 <th key={s.feld} className={s.mobil ? '' : 'col-hide-mobile'} style={{ cursor: istBearbeiterAnsicht ? 'default' : 'pointer' }} onClick={() => sortiereNach(s.feld)}>{s.label}{pfeil(s.feld)}</th>
               ))}
               <th className="col-hide-mobile" style={{ cursor: istBearbeiterAnsicht ? 'default' : 'pointer' }} onClick={() => sortiereNach('tage_in_phase')}>Tage in Phase{pfeil('tage_in_phase')}</th>
+              {!istBearbeiterAnsicht && <th style={{ width: 36 }}></th>}
             </tr>
             <tr>
               <th></th>
@@ -219,6 +227,7 @@ export default function ContactList() {
                 </th>
               ))}
               <th className="col-hide-mobile"></th>
+              {!istBearbeiterAnsicht && <th></th>}
             </tr>
           </thead>
           <tbody>
@@ -258,6 +267,11 @@ export default function ContactList() {
                   );
                 })}
                 <td className="col-hide-mobile" onClick={() => navigate(`/kontakte/${k.id}`)}>{k.tage_in_phase}</td>
+                {!istBearbeiterAnsicht && (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <button className="loesch-knopf" title="Kontakt löschen" onClick={() => kontaktLoeschen(k.id, k.firma)}>🗑</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

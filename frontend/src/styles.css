@@ -30,21 +30,25 @@ a { color: var(--sp-teal-600); text-decoration: none; }
   display: flex; align-items: center; justify-content: center; font-size: 16px; text-decoration: none;
 }
 
-/* Vier schwebende KPI-Boxen nebeneinander */
+/* Vier schwebende KPI-Boxen nebeneinander, je mit Monats- und Jahresbalken */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
 .kpi-box {
   background: var(--sp-gray-bg); border: 1px solid var(--sp-gray-border); border-radius: 10px;
   padding: 8px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
-.kpi-box-kopf { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.kpi-box-kopf { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; gap: 6px; }
 .kpi-box-label { font-size: 11px; font-weight: 600; color: var(--sp-text-muted); text-transform: uppercase; letter-spacing: .02em; }
-.kpi-box-zahlen { font-size: 13px; font-weight: 700; color: var(--sp-teal-900); }
 .kpi-box-ziel { font-size: 11px; font-weight: 400; color: var(--sp-text-muted); }
-.kpi-bar { position: relative; height: 8px; background: #fff; border: 1px solid var(--sp-gray-border); border-radius: 999px; overflow: visible; }
+.kpi-manuell-link { font-size: 11px; color: var(--sp-teal-600); cursor: pointer; white-space: nowrap; }
+.kpi-manuell-link:hover { text-decoration: underline; }
+.kpi-zeilen-label { font-size: 10px; color: var(--sp-text-muted); margin-top: 4px; margin-bottom: 1px; }
+.kpi-bar-zeile { display: flex; align-items: center; gap: 6px; }
+.kpi-bar-zahlen { font-size: 11px; font-weight: 700; color: var(--sp-teal-900); white-space: nowrap; min-width: 44px; text-align: right; }
+.kpi-bar { position: relative; flex: 1; height: 7px; background: #fff; border: 1px solid var(--sp-gray-border); border-radius: 999px; overflow: visible; }
 .kpi-bar-ist { position: absolute; left: 0; top: 0; bottom: 0; background: var(--sp-teal-600); border-radius: 999px; }
 .kpi-bar-pfeil {
-  position: absolute; top: -5px; width: 0; height: 0; transform: translateX(-50%);
-  border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--sp-amber);
+  position: absolute; top: -4px; width: 0; height: 0; transform: translateX(-50%);
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--sp-amber);
 }
 
 @media (max-width: 700px) {
@@ -159,6 +163,11 @@ button.secondary {
   font-size: 13px; cursor: pointer;
 }
 button.secondary:disabled { opacity: .5; cursor: not-allowed; }
+.loesch-knopf {
+  background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px;
+  border-radius: 6px; opacity: .6;
+}
+.loesch-knopf:hover { opacity: 1; background: #FCEBEB; }
 
 @media (max-width: 900px) {
   .detail-spalten { grid-template-columns: 1fr; }

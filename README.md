@@ -18,9 +18,33 @@ Die Datenbank-Struktur wird beim Start automatisch erweitert
 bleiben erhalten, es ist **kein Reset nötig**.
 
 **Neu zu pflegen nach diesem Update:** Unter Einstellungen → "Bearbeiter
-verwalten" sind die persönlichen Monatsziele (Kontakte/Termine/Angebote/
-Aufträge) für jeden Bearbeiter anfangs auf 0 gesetzt – bitte einmal von Hand
-eintragen, sonst zeigen die Fortschrittsbalken in der Kopfzeile 0 als Ziel an.
+verwalten" sind die persönlichen **Jahresziele** (Kontakte/Termine/Angebote/
+Aufträge) für jeden Bearbeiter einmalig auf 0 zurückgesetzt worden (da sie
+vorher als Monatswerte galten) – bitte einmal die echten Jahreswerte von Hand
+eintragen. Die Zählung der Fortschrittsbalken läuft ab dem Tag des
+Deployments dieses Updates (unter Einstellungen → "Reporting-Zählstart"
+sichtbar/änderbar) – ältere Aktivitäten/Phasenwechsel fließen bewusst nicht
+rückwirkend ein.
+
+## Was ist neu gegenüber der letzten Version (Reporting: Jahresbalken + manuelle Ergänzung)
+
+- **Zweiter Balken pro Kennzahl:** unter dem Monatsbalken jetzt zusätzlich
+  ein Jahresbalken (gleiche Logik: grau=Jahresziel, grün=Ist seit Zählstart,
+  Pfeil=Soll heute). Das Jahresziel wird direkt in den Bearbeiter-
+  Einstellungen gepflegt, der Monatsbalken zeigt automatisch Jahresziel ÷ 12
+- **Zählung startet nicht rückwirkend:** sowohl Monats- als auch
+  Jahresbalken zählen erst ab dem "Reporting-Zählstart"-Datum (Einstellungen,
+  Default = Tag des Updates). Der Soll-Pfeil rechnet für den ersten
+  (angebrochenen) Monat/Jahr entsprechend nur mit der verbleibenden Zeit ab
+  Zählstart, nicht mit dem vollen Zeitraum
+- **Kalenderjahres-Reset:** am 1. Januar beginnt die Jahreszählung
+  automatisch neu bei 0 (kein manueller Eingriff nötig); die
+  Bearbeiter-Jahresziele müssen dann neu für das neue Jahr eingetragen werden
+- **Manuelle Ergänzung bei "Kontakte":** kleiner "+ manuelle Eingabe"-Link in
+  der Kontakte-Box der Kopfzeile – öffnet ein Zahlenfeld, mit dem
+  Kontaktierungen außerhalb der Liste (E-Mail-Kampagnen, LinkedIn o.ä.)
+  nachgetragen werden können. Mehrfache Eingaben am selben Tag werden addiert
+  (nicht überschrieben) und fließen direkt in Monats- und Jahreszähler ein
 
 ## Was ist neu gegenüber der letzten Version
 
@@ -40,6 +64,8 @@ eintragen, sonst zeigen die Fortschrittsbalken in der Kopfzeile 0 als Ziel an.
     Filter) und der bekannten Checkbox-Spalte für Sammel-Zuweisung
 - **"Neuer Kontakt"-Button** oben in der Liste – einzelnen Kontakt von Hand
   anlegen, ohne Excel-Import
+- **Kontakt löschen:** Mülleimer-Symbol als letzte Spalte, nur in der
+  Vollständigen Liste, mit Sicherheitsabfrage
 - **Bugfix Firma-Suche:** die Textsuche in der Firma-Spalte hat bisher
   nichts gefiltert (fehlender Parameter im Backend) – funktioniert jetzt
   wie PLZ/Ort
@@ -108,4 +134,9 @@ ist nichts weiter zu tun, außer den neuen Datei-Inhalt auf GitHub zu
   Monats-Kennzahlen
 - `status_optionen` – frei erweiterbare Werte für das Status-Feld
 - `bearbeiter` – inkl. `ziel_kontakte`, `ziel_termine`, `ziel_angebote`,
-  `ziel_auftraege` (persönliche Monatsziele für die Kopfzeilen-Boxen)
+  `ziel_auftraege` (persönliche **Jahresziele** für die Kopfzeilen-Boxen)
+- `manuelle_ergaenzung` – manuelle Tages-Nachträge (aktuell nur "Kontakte"),
+  ein Eintrag pro Bearbeiter/Kennzahl/Tag, wird bei mehrfacher Eingabe am
+  selben Tag addiert
+- `firmen_einstellungen` – u.a. `zaehl_start_datum` (ab wann die Reporting-
+  Kennzahlen zählen)

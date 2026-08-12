@@ -13,12 +13,19 @@ export default function Settings() {
   const [statusOptionen, setStatusOptionen] = useState([]);
   const [neuerStatusWert, setNeuerStatusWert] = useState('');
   const [neuerStatusLabel, setNeuerStatusLabel] = useState('');
+  const [zaehlStart, setZaehlStart] = useState('');
 
   function laden() {
     api.bearbeiter().then(setBearbeiter);
     api.statusOptionen().then(setStatusOptionen);
+    api.firmaEinstellungen().then((e) => setZaehlStart(e.zaehl_start_datum || ''));
   }
   useEffect(laden, []);
+
+  async function zaehlStartAendern(wert) {
+    await api.firmaEinstellungAendern('zaehl_start_datum', wert);
+    laden();
+  }
 
   async function statusOptionAnlegen() {
     if (!neuerStatusWert || !neuerStatusLabel) return;
@@ -77,14 +84,14 @@ export default function Settings() {
       <div className="card">
         <p style={{ fontWeight: 600, marginTop: 0 }}>Bearbeiter verwalten</p>
         <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
-          Kontakte/Termine/Angebote/Aufträge sind die persönlichen Monatsziele für die vier Fortschrittsbalken in der Kopfzeile.
+          Kontakte/Termine/Angebote/Aufträge sind die persönlichen <strong>Jahresziele</strong> – der Monatsbalken in der Kopfzeile zeigt automatisch Jahresziel ÷ 12. Zählung läuft seit {zaehlStart || '…'} (siehe unten), nicht rückwirkend.
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
               <tr>
                 <th>Kürzel</th><th>Name</th><th>Std./Woche</th>
-                <th>Ziel Kontakte</th><th>Ziel Termine</th><th>Ziel Angebote</th><th>Ziel Aufträge</th>
+                <th>Jahresziel Kontakte</th><th>Jahresziel Termine</th><th>Jahresziel Angebote</th><th>Jahresziel Aufträge</th>
                 <th>Aktiv</th>
               </tr>
             </thead>
@@ -113,6 +120,14 @@ export default function Settings() {
         <p style={{ fontSize: 12, color: 'var(--sp-text-muted)' }}>
           Deaktivierte Bearbeiter verschwinden aus den Zuweisungs-Dropdowns, bleiben aber in der Aktivitäten-Historie sichtbar.
         </p>
+      </div>
+
+      <div className="card">
+        <p style={{ fontWeight: 600, marginTop: 0 }}>Reporting-Zählstart</p>
+        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
+          Ab diesem Datum zählen die Fortschrittsbalken (Monat + Jahr) in der Kopfzeile – nicht rückwirkend. Am 1. Januar beginnt die Jahreszählung automatisch neu.
+        </p>
+        <input type="date" value={zaehlStart} onChange={(e) => setZaehlStart(e.target.value)} onBlur={(e) => zaehlStartAendern(e.target.value)} />
       </div>
 
       <div className="card">

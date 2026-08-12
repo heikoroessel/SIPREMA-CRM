@@ -254,4 +254,12 @@ router.delete('/alle', async (req, res) => {
   res.json({ geloescht: result.rowCount });
 });
 
+// DELETE /api/kontakte/:id -> einzelnen Kontakt vollstaendig loeschen (kaskadiert auf
+// Aktivitaeten und Phasen-Historie). Nur in der Vollstaendigen Liste im Frontend verfuegbar.
+router.delete('/:id', async (req, res) => {
+  const result = await pool.query('DELETE FROM kontakte WHERE id = $1', [req.params.id]);
+  if (!result.rowCount) return res.status(404).json({ error: 'Kontakt nicht gefunden' });
+  res.status(204).end();
+});
+
 export default router;
