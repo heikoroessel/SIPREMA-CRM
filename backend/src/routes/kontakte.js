@@ -9,20 +9,35 @@ const PHASEN = ['unbearbeitet', 'in_kontakt', 'termin', 'angebot', 'auftrag'];
 // GET /api/kontakte
 // Query-Parameter: phase, ergebnis, owner ("none" fuer nicht zugewiesen), plz (Prefix),
 // zielgruppe, quelle, q (Volltext auf Firma/Nachname), page, pageSize
-router.get('/', async (req, res) => {
-  const { phase, ergebnis, owner, plz, zielgruppe, quelle, anrede, vorname, nachname, ort, q } = req.query;
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const pageSize = Math.min(200, Number(req.query.pageSize) || 50);
+// sortierung=prioritaet -> Bearbeiterlisten-Logik:
+// "verloren" wird immer ausgeblendet. Danach in dieser Reihenfolge (Tier 1 oben):
+//   1) faellige/ueberfaellige Wiedervorlage (Datum <= heute), sortiert nach Wiedervorlage aufsteigend
+//   2) Phase angebot   (nach phase_seit aufsteigend)
+//   3) Phase termin     (nach phase_seit aufsteigend)
+//   4) Phase in_kontakt (nach phase_seit aufsteigend)
+//   5) Phase unbearbeitet (nach phase_seit aufsteigend)
+const PRIORITAETS_ORDER_SQL = `
+  CASE
+    WHEN wiedervorlage IS NOT NULL AND wiedervorlage <= CURRENT_DATE THEN 0
+    WHEN phase = 'angebot' THEN 1
+    WHEN phase = 'termin' THEN 2
+    WHEN phase = 'in_kontakt' THEN 3
+    ELSE 4
+  END`;
 
+function baueWhere(query) {
+  const { phase, ergebnis, owner, plz, zielgruppe, quelle, anrede, vorname, nachname, ort, firma, q, ohne_verloren } = query;
   const where = [];
   const params = [];
 
   if (phase) { params.push(phase); where.push(`phase = $${params.length}`); }
   if (ergebnis) { params.push(ergebnis); where.push(`ergebnis = $${params.length}`); }
+  if (ohne_verloren === 'true') { where.push(`ergebnis != 'verloren'`); }
   if (owner === 'none') { where.push('owner_kuerzel IS NULL'); }
   else if (owner) { params.push(owner); where.push(`owner_kuerzel = $${params.length}`); }
   if (plz) { params.push(`${plz}%`); where.push(`plz LIKE $${params.length}`); }
   if (ort) { params.push(`%${ort}%`); where.push(`ort ILIKE $${params.length}`); }
+  if (firma) { params.push(`%${firma}%`); where.push(`firma ILIKE $${params.length}`); }
   if (zielgruppe) { params.push(zielgruppe); where.push(`zielgruppe = $${params.length}`); }
   if (quelle) { params.push(quelle); where.push(`quelle = $${params.length}`); }
   if (anrede) { params.push(anrede); where.push(`anrede = $${params.length}`); }
@@ -30,21 +45,67 @@ router.get('/', async (req, res) => {
   if (nachname) { params.push(`%${nachname}%`); where.push(`nachname ILIKE $${params.length}`); }
   if (q) { params.push(`%${q}%`); where.push(`(firma ILIKE $${params.length} OR nachname ILIKE $${params.length})`); }
 
-  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  return { whereSql: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
+}
+
+router.get('/', async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(200, Number(req.query.pageSize) || 50);
+  const { whereSql, params } = baueWhere(req.query);
+
+  const orderSql = req.query.sortierung === 'prioritaet'
+    ? `ORDER BY ${PRIORITAETS_ORDER_SQL}, CASE WHEN wiedervorlage IS NOT NULL AND wiedervorlage <= CURRENT_DATE THEN wiedervorlage::timestamptz ELSE phase_seit END ASC`
+    : `ORDER BY erstellt_am DESC`;
 
   const { rows: countRows } = await pool.query(`SELECT count(*) FROM kontakte ${whereSql}`, params);
-  params.push(pageSize, (page - 1) * pageSize);
+  const limitParams = [...params, pageSize, (page - 1) * pageSize];
   const { rows } = await pool.query(
     `SELECT id, zielgruppe, firma, ort, plz, anrede, vorname, nachname, quelle,
             phase, ergebnis, owner_kuerzel, wiedervorlage,
             EXTRACT(day FROM now() - phase_seit)::int AS tage_in_phase
      FROM kontakte ${whereSql}
-     ORDER BY erstellt_am DESC
-     LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
+     ${orderSql}
+     LIMIT $${limitParams.length - 1} OFFSET $${limitParams.length}`,
+    limitParams
   );
 
   res.json({ total: Number(countRows[0].count), page, pageSize, items: rows });
+});
+
+// GET /api/kontakte/export.csv -> CSV-Export, respektiert dieselben Filter-Query-Parameter
+// wie GET /api/kontakte (kein Paging - immer alle Treffer).
+router.get('/export.csv', async (req, res) => {
+  const { whereSql, params } = baueWhere(req.query);
+  const orderSql = req.query.sortierung === 'prioritaet'
+    ? `ORDER BY ${PRIORITAETS_ORDER_SQL}, CASE WHEN wiedervorlage IS NOT NULL AND wiedervorlage <= CURRENT_DATE THEN wiedervorlage::timestamptz ELSE phase_seit END ASC`
+    : `ORDER BY erstellt_am DESC`;
+
+  const { rows } = await pool.query(
+    `SELECT zielgruppe, firma, strasse, plz, ort, land, anrede, titel, vorname, nachname,
+            email, telefon, telefon_zentrale, email_firma, website, rolle, quelle,
+            vertriebsstrategie, phase, ergebnis, absagegrund, owner_kuerzel, wiedervorlage,
+            EXTRACT(day FROM now() - phase_seit)::int AS tage_in_phase
+     FROM kontakte ${whereSql} ${orderSql}`,
+    params
+  );
+
+  const spalten = Object.keys(rows[0] || {
+    zielgruppe: '', firma: '', strasse: '', plz: '', ort: '', land: '', anrede: '', titel: '',
+    vorname: '', nachname: '', email: '', telefon: '', telefon_zentrale: '', email_firma: '',
+    website: '', rolle: '', quelle: '', vertriebsstrategie: '', phase: '', ergebnis: '',
+    absagegrund: '', owner_kuerzel: '', wiedervorlage: '', tage_in_phase: ''
+  });
+  const escape = (v) => {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const zeilen = [spalten.join(';'), ...rows.map((r) => spalten.map((s) => escape(r[s])).join(';'))];
+  const csv = '\uFEFF' + zeilen.join('\r\n');
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="siprema-kontakte.csv"');
+  res.send(csv);
 });
 
 // GET /api/kontakte/werte/:feld -> bekannte, tatsaechlich vorkommende Werte einer Spalte

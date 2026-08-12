@@ -16,8 +16,16 @@ export async function initSchema() {
       name text NOT NULL,
       aktiv boolean NOT NULL DEFAULT true,
       stunden_pro_woche numeric NOT NULL DEFAULT 40,
+      ziel_kontakte integer NOT NULL DEFAULT 0,
+      ziel_termine integer NOT NULL DEFAULT 0,
+      ziel_angebote integer NOT NULL DEFAULT 0,
+      ziel_auftraege integer NOT NULL DEFAULT 0,
       erstellt_am timestamptz NOT NULL DEFAULT now()
     );
+    ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_kontakte integer NOT NULL DEFAULT 0;
+    ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_termine integer NOT NULL DEFAULT 0;
+    ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_angebote integer NOT NULL DEFAULT 0;
+    ALTER TABLE bearbeiter ADD COLUMN IF NOT EXISTS ziel_auftraege integer NOT NULL DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS punkte_gewichtung (
       ereignis text PRIMARY KEY,

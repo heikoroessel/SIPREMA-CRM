@@ -3,7 +3,6 @@ import { api } from '../api.js';
 
 export default function Settings() {
   const [bearbeiter, setBearbeiter] = useState([]);
-  const [gewichtung, setGewichtung] = useState([]);
   const [neuKuerzel, setNeuKuerzel] = useState('');
   const [neuName, setNeuName] = useState('');
   const [neuStunden, setNeuStunden] = useState(40);
@@ -14,20 +13,12 @@ export default function Settings() {
   const [statusOptionen, setStatusOptionen] = useState([]);
   const [neuerStatusWert, setNeuerStatusWert] = useState('');
   const [neuerStatusLabel, setNeuerStatusLabel] = useState('');
-  const [firmaEinstellungen, setFirmaEinstellungen] = useState({});
 
   function laden() {
     api.bearbeiter().then(setBearbeiter);
-    api.punkteGewichtung().then(setGewichtung);
     api.statusOptionen().then(setStatusOptionen);
-    api.firmaEinstellungen().then(setFirmaEinstellungen);
   }
   useEffect(laden, []);
-
-  async function firmaEinstellungAendern(key, value) {
-    await api.firmaEinstellungAendern(key, value);
-    laden();
-  }
 
   async function statusOptionAnlegen() {
     if (!neuerStatusWert || !neuerStatusLabel) return;
@@ -51,11 +42,6 @@ export default function Settings() {
 
   async function bearbeiterAendern(kuerzel, feld, wert) {
     await api.bearbeiterAendern(kuerzel, { [feld]: wert });
-    laden();
-  }
-
-  async function gewichtungAendern(ereignis, punkte) {
-    await api.punkteGewichtungAendern(ereignis, Number(punkte));
     laden();
   }
 
@@ -90,20 +76,35 @@ export default function Settings() {
     <div>
       <div className="card">
         <p style={{ fontWeight: 600, marginTop: 0 }}>Bearbeiter verwalten</p>
-        <table>
-          <thead><tr><th>Kürzel</th><th>Name</th><th>Std./Woche</th><th>Aktiv</th></tr></thead>
-          <tbody>
-            {bearbeiter.map((b) => (
-              <tr key={b.kuerzel}>
-                <td>{b.kuerzel}</td>
-                <td><input type="text" defaultValue={b.name} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'name', e.target.value)} /></td>
-                <td><input type="text" defaultValue={b.stunden_pro_woche} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'stunden_pro_woche', Number(e.target.value))} /></td>
-                <td><input type="checkbox" checked={b.aktiv} onChange={(e) => bearbeiterAendern(b.kuerzel, 'aktiv', e.target.checked)} /></td>
+        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
+          Kontakte/Termine/Angebote/Aufträge sind die persönlichen Monatsziele für die vier Fortschrittsbalken in der Kopfzeile.
+        </p>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Kürzel</th><th>Name</th><th>Std./Woche</th>
+                <th>Ziel Kontakte</th><th>Ziel Termine</th><th>Ziel Angebote</th><th>Ziel Aufträge</th>
+                <th>Aktiv</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            </thead>
+            <tbody>
+              {bearbeiter.map((b) => (
+                <tr key={b.kuerzel}>
+                  <td>{b.kuerzel}</td>
+                  <td><input type="text" defaultValue={b.name} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'name', e.target.value)} /></td>
+                  <td><input type="text" defaultValue={b.stunden_pro_woche} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'stunden_pro_woche', Number(e.target.value))} /></td>
+                  <td><input type="text" defaultValue={b.ziel_kontakte} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_kontakte', Number(e.target.value))} /></td>
+                  <td><input type="text" defaultValue={b.ziel_termine} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_termine', Number(e.target.value))} /></td>
+                  <td><input type="text" defaultValue={b.ziel_angebote} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_angebote', Number(e.target.value))} /></td>
+                  <td><input type="text" defaultValue={b.ziel_auftraege} style={{ width: 60 }} onBlur={(e) => bearbeiterAendern(b.kuerzel, 'ziel_auftraege', Number(e.target.value))} /></td>
+                  <td><input type="checkbox" checked={b.aktiv} onChange={(e) => bearbeiterAendern(b.kuerzel, 'aktiv', e.target.checked)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <input type="text" placeholder="Kürzel" style={{ width: 80 }} value={neuKuerzel} onChange={(e) => setNeuKuerzel(e.target.value)} />
           <input type="text" placeholder="Name" value={neuName} onChange={(e) => setNeuName(e.target.value)} />
           <input type="text" placeholder="Std./Woche" style={{ width: 100 }} value={neuStunden} onChange={(e) => setNeuStunden(e.target.value)} />
@@ -112,8 +113,10 @@ export default function Settings() {
         <p style={{ fontSize: 12, color: 'var(--sp-text-muted)' }}>
           Deaktivierte Bearbeiter verschwinden aus den Zuweisungs-Dropdowns, bleiben aber in der Aktivitäten-Historie sichtbar.
         </p>
+      </div>
 
-        <p style={{ fontWeight: 600, marginTop: 20, marginBottom: 6, fontSize: 13 }}>Alle Kontakte übertragen</p>
+      <div className="card">
+        <p style={{ fontWeight: 600, marginTop: 0 }}>Alle Kontakte übertragen</p>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <select value={vonOwner} onChange={(e) => setVonOwner(e.target.value)}>
             <option value="">Von …</option>
@@ -127,23 +130,6 @@ export default function Settings() {
           <button className="primary" onClick={kontakteUebertragen} disabled={!vonOwner || !zuOwner}>Übertragen</button>
         </div>
         {uebernahmeStatus && <p style={{ fontSize: 13 }}>{uebernahmeStatus}</p>}
-      </div>
-
-      <div className="card">
-        <p style={{ fontWeight: 600, marginTop: 0 }}>Kapazität & Punkte-Ziel</p>
-        <p style={{ fontSize: 12, color: 'var(--sp-text-muted)', marginTop: 0 }}>
-          Bestimmt, wie die Soll-Punkte je Bearbeiter berechnet werden: (eigene Std./Woche ÷ Vollzeit-Std.) × Sollpunkte pro Vollzeit-Woche.
-        </p>
-        <div className="field-grid" style={{ gridTemplateColumns: '1fr 1fr', maxWidth: 500 }}>
-          <div>
-            <label>Vollzeit-Stunden pro Woche</label>
-            <input type="text" defaultValue={firmaEinstellungen.vollzeit_stunden_woche} onBlur={(e) => firmaEinstellungAendern('vollzeit_stunden_woche', e.target.value)} />
-          </div>
-          <div>
-            <label>Sollpunkte pro Vollzeit-Woche</label>
-            <input type="text" defaultValue={firmaEinstellungen.sollpunkte_pro_vollzeit_woche} onBlur={(e) => firmaEinstellungAendern('sollpunkte_pro_vollzeit_woche', e.target.value)} />
-          </div>
-        </div>
       </div>
 
       <div className="card">
@@ -168,21 +154,6 @@ export default function Settings() {
           <input type="text" placeholder="Label (z.B. Wartend)" value={neuerStatusLabel} onChange={(e) => setNeuerStatusLabel(e.target.value)} />
           <button className="primary" onClick={statusOptionAnlegen}>Hinzufügen</button>
         </div>
-      </div>
-
-      <div className="card">
-        <p style={{ fontWeight: 600, marginTop: 0 }}>Punkte-Gewichtung</p>
-        <table>
-          <thead><tr><th>Ereignis</th><th>Punkte</th></tr></thead>
-          <tbody>
-            {gewichtung.map((g) => (
-              <tr key={g.ereignis}>
-                <td>{g.ereignis}</td>
-                <td><input type="text" defaultValue={g.punkte} style={{ width: 60 }} onBlur={(e) => gewichtungAendern(g.ereignis, e.target.value)} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       <div className="card">

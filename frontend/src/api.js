@@ -29,5 +29,6 @@ export const api = {
   firmaEinstellungen: () => req('/settings/firma'),
   firmaEinstellungAendern: (key, value) => req(`/settings/firma/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
   werte: (feld) => req(`/kontakte/werte/${feld}`),
-  meinePunkte: (kuerzel, zeitraum) => req(`/punkte/${kuerzel}?zeitraum=${zeitraum}`)
+  meinePunkte: (kuerzel) => req(`/punkte/${kuerzel}`),
+  exportCsvUrl: (params) => `${BASE}/kontakte/export.csv?${new URLSearchParams(params)}`
 };
